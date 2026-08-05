@@ -1,0 +1,137 @@
+{
+  "name": "Happy Buy — ML Token Refresh",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 4
+            }
+          ]
+        }
+      },
+      "id": "e1a2b3c4-1111-4aaa-8000-000000000001",
+      "name": "Cada 4 horas",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/ml_tokens?account=eq.HAPPYBUYCOL&select=refresh_token",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Accept", "value": "application/vnd.pgrst.object+json" }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "e1a2b3c4-2222-4aaa-8000-000000000002",
+      "name": "Leer token actual (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [500, 300],
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 60000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.mercadolibre.com/oauth/token",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "accept", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "grant_type", "value": "refresh_token" },
+            { "name": "client_id", "value": "={{ $env.ML_CLIENT_ID }}" },
+            { "name": "client_secret", "value": "={{ $env.ML_CLIENT_SECRET }}" },
+            { "name": "refresh_token", "value": "={{ $json.refresh_token }}" }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "id": "e1a2b3c4-3333-4aaa-8000-000000000003",
+      "name": "Refrescar token (Mercado Libre)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [760, 300],
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 60000
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/ml_tokens",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Prefer", "value": "resolution=merge-duplicates,return=minimal" }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ account: \"HAPPYBUYCOL\", access_token: $json.access_token, refresh_token: $json.refresh_token, user_id: $json.user_id, expires_at: $now.plus({ seconds: $json.expires_in }).toISO(), updated_at: $now.toISO() }) }}",
+        "options": {}
+      },
+      "id": "e1a2b3c4-4444-4aaa-8000-000000000004",
+      "name": "Guardar token nuevo (Supabase)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1020, 300],
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 60000
+    }
+  ],
+  "connections": {
+    "Cada 4 horas": {
+      "main": [
+        [{ "node": "Leer token actual (Supabase)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Leer token actual (Supabase)": {
+      "main": [
+        [{ "node": "Refrescar token (Mercado Libre)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Refrescar token (Mercado Libre)": {
+      "main": [
+        [{ "node": "Guardar token nuevo (Supabase)", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {}
+}
