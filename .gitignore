@@ -13,6 +13,11 @@ pnpm-lock.yaml
 /.next/
 /out/
 *.rsc
+next-env.d.ts
+*.tsbuildinfo
+
+# Playwright MCP test artifacts
+.playwright-mcp/
 
 # Production
 /build
