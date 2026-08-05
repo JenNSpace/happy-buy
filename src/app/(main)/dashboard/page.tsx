@@ -9,7 +9,6 @@ import { CatalogSection } from '@/features/dashboard/components/CatalogSection'
 import { ProductMarginSection } from '@/features/dashboard/components/ProductMarginSection'
 import { RecommendationsSection } from '@/features/dashboard/components/RecommendationsSection'
 import { SalesHistorySection } from '@/features/dashboard/components/SalesHistorySection'
-import { AdsPatternSection } from '@/features/dashboard/components/AdsPatternSection'
 import { CardSkeleton } from '@/features/dashboard/components/CardSkeleton'
 import { GoalSection } from '@/features/goals/components/GoalSection'
 
@@ -53,12 +52,6 @@ export default async function DashboardPage() {
           <div className="md:col-span-2">
             <Suspense fallback={<CardSkeleton label="historial de ventas" />}>
               <SalesHistorySection />
-            </Suspense>
-          </div>
-
-          <div className="md:col-span-2">
-            <Suspense fallback={<CardSkeleton label="patrón de ads por día" />}>
-              <AdsPatternSection />
             </Suspense>
           </div>
 

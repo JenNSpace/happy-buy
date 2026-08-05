@@ -45,7 +45,7 @@ export function GoalSettingsForm({
           name="target_amount"
           type="number"
           min={1}
-          step={1000}
+          step={1}
           defaultValue={currentTarget ?? suggestedTarget ?? ''}
           placeholder="Monto en COP"
           required
