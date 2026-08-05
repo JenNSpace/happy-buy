@@ -71,3 +71,4 @@ supabase/.temp
 
 # Forge — commit .forge/manifest.json (forge update needs it), ignore backups
 .forge/backups/
+.env*
