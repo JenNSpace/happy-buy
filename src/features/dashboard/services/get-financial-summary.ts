@@ -1,12 +1,6 @@
 import 'server-only'
 import { mlGet } from './ml-client'
-import {
-  ML_USER_ID,
-  ML_SALE_COMMISSION_RATE,
-  PRODUCT_COST_PER_UNIT_COP,
-  FULFILLMENT_FEE_FULL_COP,
-  shippingCostForItem,
-} from '../constants'
+import { ML_USER_ID, computeOrderLineMetrics } from '../constants'
 import type { FinancialSummary, PeriodMetrics } from '../types'
 
 interface MlOrderItem {
@@ -46,20 +40,22 @@ async function fetchPeriodMetrics(from: Date, to: Date, periodLabel: string): Pr
   let shippingCost = 0
   let productCost = 0
   let fulfillmentFee = 0
+  let mlCommission = 0
+  let netProfit = 0
 
   for (const order of paidOrders) {
     for (const line of order.order_items) {
-      const lineTotal = line.unit_price * line.quantity
-      grossSales += lineTotal
+      const m = computeOrderLineMetrics(line.item.id, line.quantity, line.unit_price)
+      grossSales += m.grossSales
       unitsSold += line.quantity
-      productCost += PRODUCT_COST_PER_UNIT_COP * line.quantity
-      shippingCost += shippingCostForItem(line.item.id)
-      fulfillmentFee += FULFILLMENT_FEE_FULL_COP // one package per order line (current real-world default: not using Flex)
+      mlCommission += m.mlCommission
+      shippingCost += m.shippingCost
+      productCost += m.productCost
+      fulfillmentFee += m.fulfillmentFee
+      netProfit += m.netProfit
     }
   }
 
-  const mlCommission = grossSales * ML_SALE_COMMISSION_RATE
-  const netProfit = grossSales - mlCommission - shippingCost - productCost - fulfillmentFee
   const marginRate = grossSales > 0 ? netProfit / grossSales : 0
 
   return {

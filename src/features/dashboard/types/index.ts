@@ -49,3 +49,10 @@ export interface Recommendation {
   severity: RecommendationSeverity
   message: string
 }
+
+export interface SalesHistoryPoint {
+  dateCreated: string // ISO timestamp, order's date_created
+  grossSales: number
+  netProfit: number
+  unitsSold: number
+}

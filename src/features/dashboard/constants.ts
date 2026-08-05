@@ -38,3 +38,19 @@ export function shippingCostForItem(itemId: string): number {
   // Bundles ship far more efficiently than N singles — use the real Pack X2 rate per unit as the estimate for all bundles.
   return (SHIPPING_COST_PACK_X2_COP / 2) * packSize
 }
+
+/**
+ * Real (post-cost) economics of a single order line item — shared by every
+ * service that aggregates orders (period summary, sales history) so the cost
+ * model lives in exactly one place.
+ */
+export function computeOrderLineMetrics(itemId: string, quantity: number, unitPrice: number) {
+  const grossSales = unitPrice * quantity
+  const mlCommission = grossSales * ML_SALE_COMMISSION_RATE
+  const shippingCost = shippingCostForItem(itemId)
+  const productCost = PRODUCT_COST_PER_UNIT_COP * quantity
+  const fulfillmentFee = FULFILLMENT_FEE_FULL_COP
+  const netProfit = grossSales - mlCommission - shippingCost - productCost - fulfillmentFee
+
+  return { grossSales, mlCommission, shippingCost, productCost, fulfillmentFee, netProfit }
+}
