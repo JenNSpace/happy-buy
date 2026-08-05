@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/snapshot-ads-daily",
+      "schedule": "0 9 * * *"
+    }
+  ]
+}

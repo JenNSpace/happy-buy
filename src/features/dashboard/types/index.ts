@@ -18,6 +18,7 @@ export interface FinancialSummary extends PeriodMetrics {
 export interface AdsSummary {
   campaignName: string
   status: string
+  budget: number
   clicks: number
   cost: number
   attributedSales: number

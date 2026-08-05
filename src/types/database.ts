@@ -15,6 +15,18 @@ export interface Goal {
   updated_by: string | null
 }
 
+export interface AdsDailySnapshot {
+  id: string
+  snapshot_date: string
+  campaign_name: string
+  budget: number
+  clicks: number
+  cost: number
+  total_amount: number
+  roas: number
+  created_at: string
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -27,6 +39,11 @@ export interface Database {
         Row: Goal
         Insert: Omit<Goal, 'id' | 'updated_at'> & { id?: string; updated_at?: string }
         Update: Partial<Omit<Goal, 'id'>>
+      }
+      ads_daily_snapshots: {
+        Row: AdsDailySnapshot
+        Insert: Omit<AdsDailySnapshot, 'id' | 'created_at'> & { id?: string; created_at?: string }
+        Update: Partial<Omit<AdsDailySnapshot, 'id'>>
       }
     }
   }

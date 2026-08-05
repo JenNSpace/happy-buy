@@ -2,14 +2,14 @@ import { Suspense } from 'react'
 import Image from 'next/image'
 import { signout } from '@/actions/auth'
 import { getFinancialSummary } from '@/features/dashboard/services/get-financial-summary'
-import { breakEvenRoas } from '@/features/dashboard/constants'
 import { FinancialSummaryCard } from '@/features/dashboard/components/FinancialSummaryCard'
-import { Calculator } from '@/features/dashboard/components/Calculator'
+import { CalculatorSection } from '@/features/dashboard/components/CalculatorSection'
 import { AdsSection } from '@/features/dashboard/components/AdsSection'
 import { CatalogSection } from '@/features/dashboard/components/CatalogSection'
 import { ProductMarginSection } from '@/features/dashboard/components/ProductMarginSection'
 import { RecommendationsSection } from '@/features/dashboard/components/RecommendationsSection'
 import { SalesHistorySection } from '@/features/dashboard/components/SalesHistorySection'
+import { AdsPatternSection } from '@/features/dashboard/components/AdsPatternSection'
 import { CardSkeleton } from '@/features/dashboard/components/CardSkeleton'
 import { GoalSection } from '@/features/goals/components/GoalSection'
 
@@ -43,18 +43,22 @@ export default async function DashboardPage() {
           </Suspense>
 
           <Suspense fallback={<CardSkeleton label="meta" />}>
-            <GoalSection currentAmount={summary.netProfit} />
+            <GoalSection currentAmount={summary.netProfit} previousAmount={summary.previousPeriod.netProfit} />
           </Suspense>
 
-          <Calculator
-            marginRate={summary.marginRate}
-            breakEvenRoas={breakEvenRoas(summary.marginRate || 0.122)}
-            avgUnitPrice={avgUnitPrice}
-          />
+          <Suspense fallback={<CardSkeleton label="calculadora" />}>
+            <CalculatorSection summary={summary} avgUnitPrice={avgUnitPrice} />
+          </Suspense>
 
           <div className="md:col-span-2">
             <Suspense fallback={<CardSkeleton label="historial de ventas" />}>
               <SalesHistorySection />
+            </Suspense>
+          </div>
+
+          <div className="md:col-span-2">
+            <Suspense fallback={<CardSkeleton label="patrón de ads por día" />}>
+              <AdsPatternSection />
             </Suspense>
           </div>
 

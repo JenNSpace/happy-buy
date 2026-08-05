@@ -3,10 +3,18 @@
 import { useState } from 'react'
 import { updateGoal } from '../services/update-goal'
 
-export function GoalSettingsForm({ currentTarget }: { currentTarget: number | null }) {
+export function GoalSettingsForm({
+  currentTarget,
+  previousAmount,
+}: {
+  currentTarget: number | null
+  previousAmount: number
+}) {
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  const suggestedTarget = previousAmount > 0 ? Math.round((previousAmount * 1.1) / 1000) * 1000 : null
 
   async function handleSubmit(formData: FormData) {
     setLoading(true)
@@ -38,7 +46,7 @@ export function GoalSettingsForm({ currentTarget }: { currentTarget: number | nu
           type="number"
           min={1}
           step={1000}
-          defaultValue={currentTarget ?? ''}
+          defaultValue={currentTarget ?? suggestedTarget ?? ''}
           placeholder="Monto en COP"
           required
           className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm focus:border-happy-green focus:outline-none focus:ring-1 focus:ring-happy-green"
@@ -51,6 +59,9 @@ export function GoalSettingsForm({ currentTarget }: { currentTarget: number | nu
           {loading ? '...' : 'Guardar'}
         </button>
       </div>
+      {!currentTarget && suggestedTarget && (
+        <p className="text-xs text-gray-400">Sugerencia: 10% más que la semana pasada.</p>
+      )}
       {error && <p className="text-xs text-red-600">{error}</p>}
     </form>
   )

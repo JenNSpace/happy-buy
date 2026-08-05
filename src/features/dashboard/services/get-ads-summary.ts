@@ -7,6 +7,7 @@ interface MlCampaign {
   id: number
   name: string
   status: string
+  budget: number
   metrics: {
     clicks: number
     cost: number
@@ -20,7 +21,7 @@ interface MlCampaignsSearchResponse {
 
 let cachedAdvertiserId: number | null = null
 
-async function getAdvertiserId(): Promise<number> {
+export async function getAdvertiserId(): Promise<number> {
   if (cachedAdvertiserId) return cachedAdvertiserId
   const data = await mlGet<{ advertisers: { advertiser_id: number }[] }>(
     '/advertising/advertisers?product_id=PADS'
@@ -54,6 +55,7 @@ export async function getAdsSummary(marginRate: number, days = 7): Promise<AdsSu
   return {
     campaignName: campaign.name,
     status: campaign.status,
+    budget: campaign.budget,
     clicks,
     cost,
     attributedSales: total_amount,
