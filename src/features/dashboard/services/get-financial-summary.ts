@@ -4,12 +4,10 @@ import {
   ML_USER_ID,
   ML_SALE_COMMISSION_RATE,
   PRODUCT_COST_PER_UNIT_COP,
-  SHIPPING_COST_SINGLE_UNIT_COP,
-  SHIPPING_COST_PACK_X2_COP,
   FULFILLMENT_FEE_FULL_COP,
-  ITEM_PACK_SIZE,
+  shippingCostForItem,
 } from '../constants'
-import type { FinancialSummary } from '../types'
+import type { FinancialSummary, PeriodMetrics } from '../types'
 
 interface MlOrderItem {
   item: { id: string; title: string }
@@ -29,16 +27,7 @@ interface MlOrdersSearchResponse {
   results: MlOrder[]
 }
 
-function shippingCostForItem(itemId: string): number {
-  const packSize = ITEM_PACK_SIZE[itemId] ?? 1
-  if (packSize <= 1) return SHIPPING_COST_SINGLE_UNIT_COP
-  // Bundles ship far more efficiently than N singles — use the real Pack X2 rate per unit as the estimate for all bundles.
-  return (SHIPPING_COST_PACK_X2_COP / 2) * packSize
-}
-
-export async function getFinancialSummary(days = 7): Promise<FinancialSummary> {
-  const to = new Date()
-  const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000)
+async function fetchPeriodMetrics(from: Date, to: Date, periodLabel: string): Promise<PeriodMetrics> {
   const fmt = (d: Date) => d.toISOString().slice(0, 19) + '.000-00:00'
 
   const query = new URLSearchParams({
@@ -74,7 +63,7 @@ export async function getFinancialSummary(days = 7): Promise<FinancialSummary> {
   const marginRate = grossSales > 0 ? netProfit / grossSales : 0
 
   return {
-    periodLabel: `Últimos ${days} días`,
+    periodLabel,
     orderCount: paidOrders.length,
     unitsSold,
     grossSales,
@@ -85,4 +74,18 @@ export async function getFinancialSummary(days = 7): Promise<FinancialSummary> {
     netProfit,
     marginRate,
   }
+}
+
+export async function getFinancialSummary(days = 7): Promise<FinancialSummary> {
+  const to = new Date()
+  const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000)
+  const previousTo = from
+  const previousFrom = new Date(from.getTime() - days * 24 * 60 * 60 * 1000)
+
+  const [current, previousPeriod] = await Promise.all([
+    fetchPeriodMetrics(from, to, `Últimos ${days} días`),
+    fetchPeriodMetrics(previousFrom, previousTo, `${days} días anteriores`),
+  ])
+
+  return { ...current, previousPeriod }
 }

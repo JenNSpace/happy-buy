@@ -31,3 +31,10 @@ export const FULFILLMENT_FEE_FULL_COP = 5000
 export function breakEvenRoas(marginRate: number) {
   return 1 / marginRate
 }
+
+export function shippingCostForItem(itemId: string): number {
+  const packSize = ITEM_PACK_SIZE[itemId] ?? 1
+  if (packSize <= 1) return SHIPPING_COST_SINGLE_UNIT_COP
+  // Bundles ship far more efficiently than N singles — use the real Pack X2 rate per unit as the estimate for all bundles.
+  return (SHIPPING_COST_PACK_X2_COP / 2) * packSize
+}

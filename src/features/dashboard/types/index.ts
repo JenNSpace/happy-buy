@@ -1,4 +1,4 @@
-export interface FinancialSummary {
+export interface PeriodMetrics {
   periodLabel: string
   orderCount: number
   unitsSold: number
@@ -9,6 +9,10 @@ export interface FinancialSummary {
   fulfillmentFee: number
   netProfit: number
   marginRate: number
+}
+
+export interface FinancialSummary extends PeriodMetrics {
+  previousPeriod: PeriodMetrics
 }
 
 export interface AdsSummary {
@@ -29,4 +33,19 @@ export interface CatalogItem {
   soldQuantity: number
   availableQuantity: number
   status: string
+}
+
+export interface ProductMargin {
+  id: string
+  title: string
+  price: number
+  marginAmount: number
+  marginRate: number
+}
+
+export type RecommendationSeverity = 'urgent' | 'warning' | 'good'
+
+export interface Recommendation {
+  severity: RecommendationSeverity
+  message: string
 }

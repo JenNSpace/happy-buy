@@ -6,7 +6,13 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      // Personaliza aquí tu tema
+      colors: {
+        happy: {
+          green: '#21B674',
+          greenDark: '#009345',
+          lime: '#8CC63E',
+        },
+      },
     },
   },
   plugins: [],
