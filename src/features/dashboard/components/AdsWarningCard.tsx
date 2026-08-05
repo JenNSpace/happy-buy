@@ -33,13 +33,27 @@ export function AdsWarningCard({ ads }: { ads: AdsSummary | null }) {
         </div>
         <div>
           <p className="text-gray-500">ROAS real</p>
-          <p className="text-lg font-semibold text-gray-900">{ads.roas.toFixed(2)}x</p>
+          <p className="text-lg font-semibold text-gray-900">
+            {ads.roas.toFixed(2)}x{' '}
+            <span
+              className={`text-xs font-normal ${ads.roas >= ads.roasTarget ? 'text-happy-greenDark' : 'text-red-600'}`}
+            >
+              (objetivo {ads.roasTarget.toFixed(1)}x)
+            </span>
+          </p>
         </div>
         <div>
           <p className="text-gray-500">ROAS de equilibrio</p>
           <p className="text-lg font-semibold text-gray-900">{ads.breakEvenRoas.toFixed(1)}x</p>
         </div>
       </div>
+
+      {ads.roas < ads.roasTarget && (
+        <p className="mt-3 text-xs text-gray-500">
+          Tu ROAS objetivo (el que tú configuras en Mercado Ads) es {ads.roasTarget.toFixed(1)}x — el
+          algoritmo todavía no lo alcanza con el presupuesto/competencia actual.
+        </p>
+      )}
 
       {ads.isLosingMoney && (
         <p className="mt-4 rounded-lg bg-red-100 p-3 text-sm text-red-700">

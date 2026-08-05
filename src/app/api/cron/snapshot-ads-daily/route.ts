@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic'
 interface MlCampaign {
   name: string
   budget: number
+  roas_target: number
   metrics: { clicks: number; cost: number; total_amount: number }
 }
 
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
   const dateStr = yesterday.toISOString().slice(0, 10)
 
   const path =
-    `/advertising/${ML_SITE_ID}/advertisers/${advertiserId}/product_ads/campaigns/search` +
+    `/marketplace/advertising/${ML_SITE_ID}/advertisers/${advertiserId}/product_ads/campaigns/search` +
     `?limit=50&offset=0&date_from=${dateStr}&date_to=${dateStr}&metrics=clicks,cost,total_amount&metrics_summary=true`
 
   const data = await mlGet<MlCampaignsSearchResponse>(path, { 'api-version': '2' })
@@ -54,6 +55,7 @@ export async function GET(request: Request) {
       snapshot_date: dateStr,
       campaign_name: campaign.name,
       budget: campaign.budget,
+      roas_target: campaign.roas_target,
       clicks,
       cost,
       total_amount,

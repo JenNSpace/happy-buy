@@ -20,6 +20,7 @@ export interface AdsDailySnapshot {
   snapshot_date: string
   campaign_name: string
   budget: number
+  roas_target: number
   clicks: number
   cost: number
   total_amount: number

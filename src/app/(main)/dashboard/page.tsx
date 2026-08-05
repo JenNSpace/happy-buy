@@ -9,6 +9,7 @@ import { CatalogSection } from '@/features/dashboard/components/CatalogSection'
 import { ProductMarginSection } from '@/features/dashboard/components/ProductMarginSection'
 import { RecommendationsSection } from '@/features/dashboard/components/RecommendationsSection'
 import { SalesHistorySection } from '@/features/dashboard/components/SalesHistorySection'
+import { ProductAdsPerformanceSection } from '@/features/dashboard/components/ProductAdsPerformanceSection'
 import { CardSkeleton } from '@/features/dashboard/components/CardSkeleton'
 import { GoalSection } from '@/features/goals/components/GoalSection'
 
@@ -52,6 +53,12 @@ export default async function DashboardPage() {
           <div className="md:col-span-2">
             <Suspense fallback={<CardSkeleton label="historial de ventas" />}>
               <SalesHistorySection />
+            </Suspense>
+          </div>
+
+          <div className="md:col-span-2">
+            <Suspense fallback={<CardSkeleton label="ads por producto" />}>
+              <ProductAdsPerformanceSection marginRate={summary.marginRate} />
             </Suspense>
           </div>
 

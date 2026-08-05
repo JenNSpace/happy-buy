@@ -19,12 +19,22 @@ export interface AdsSummary {
   campaignName: string
   status: string
   budget: number
+  roasTarget: number
   clicks: number
   cost: number
   attributedSales: number
   roas: number
   breakEvenRoas: number
   isLosingMoney: boolean
+}
+
+export interface ProductAdsPerformance {
+  itemId: string
+  title: string
+  clicks: number
+  cost: number
+  attributedSales: number
+  roas: number
 }
 
 export interface CatalogItem {
