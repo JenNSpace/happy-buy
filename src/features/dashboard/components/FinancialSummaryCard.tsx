@@ -1,6 +1,6 @@
 import { formatCOP, formatPercent } from '@/shared/utils/format'
 import { ComparisonBadge } from './ComparisonBadge'
-import type { FinancialSummary } from '../types'
+import type { AdsSummary, FinancialSummary } from '../types'
 
 function Row({ label, value, negative }: { label: string; value: number; negative?: boolean }) {
   return (
@@ -14,9 +14,17 @@ function Row({ label, value, negative }: { label: string; value: number; negativ
   )
 }
 
-export function FinancialSummaryCard({ summary }: { summary: FinancialSummary }) {
-  const isProfitable = summary.netProfit > 0
+export function FinancialSummaryCard({
+  summary,
+  ads,
+}: {
+  summary: FinancialSummary
+  ads: AdsSummary | null
+}) {
   const prev = summary.previousPeriod
+  const adsCost = ads?.cost ?? 0
+  const netProfitAfterAds = summary.netProfit - adsCost
+  const isProfitableAfterAds = netProfitAfterAds > 0
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -36,19 +44,27 @@ export function FinancialSummaryCard({ summary }: { summary: FinancialSummary })
       <Row label="Envío" value={summary.shippingCost} negative />
       <Row label="Costo del producto (iHerb)" value={summary.productCost} negative />
       <Row label="Pago a despacho" value={summary.fulfillmentFee} negative />
+      <Row label="Publicidad (Mercado Ads)" value={adsCost} negative />
 
-      <div className="mt-4 flex items-center justify-between rounded-lg bg-gray-50 p-3">
-        <span className="font-semibold text-gray-900">Ganancia neta</span>
-        <span className="flex items-center">
-          <span className={`text-xl font-bold ${isProfitable ? 'text-happy-green' : 'text-red-600'}`}>
-            {formatCOP(summary.netProfit)}
-          </span>
+      <div className="mt-2 flex items-center justify-between text-sm">
+        <span className="text-gray-600">Ganancia antes de ads</span>
+        <span className="flex items-center font-medium text-gray-900">
+          {formatCOP(summary.netProfit)}
           <ComparisonBadge current={summary.netProfit} previous={prev.netProfit} />
         </span>
       </div>
 
+      <div className="mt-4 flex items-center justify-between rounded-lg bg-gray-50 p-3">
+        <span className="font-semibold text-gray-900">Ganancia real (después de ads)</span>
+        <span
+          className={`text-xl font-bold ${isProfitableAfterAds ? 'text-happy-green' : 'text-red-600'}`}
+        >
+          {formatCOP(netProfitAfterAds)}
+        </span>
+      </div>
+
       <div className="mt-2 flex items-center justify-between text-sm">
-        <span className="text-gray-600">Margen neto</span>
+        <span className="text-gray-600">Margen antes de ads</span>
         <span className="flex items-center font-medium text-gray-900">
           {formatPercent(summary.marginRate)}
           <ComparisonBadge current={summary.marginRate} previous={prev.marginRate} />

@@ -2,9 +2,10 @@ import { Suspense } from 'react'
 import Image from 'next/image'
 import { signout } from '@/actions/auth'
 import { getFinancialSummary } from '@/features/dashboard/services/get-financial-summary'
+import { getAdsSummary } from '@/features/dashboard/services/get-ads-summary'
 import { FinancialSummaryCard } from '@/features/dashboard/components/FinancialSummaryCard'
-import { CalculatorSection } from '@/features/dashboard/components/CalculatorSection'
-import { AdsSection } from '@/features/dashboard/components/AdsSection'
+import { Calculator } from '@/features/dashboard/components/Calculator'
+import { AdsWarningCard } from '@/features/dashboard/components/AdsWarningCard'
 import { CatalogSection } from '@/features/dashboard/components/CatalogSection'
 import { ProductMarginSection } from '@/features/dashboard/components/ProductMarginSection'
 import { RecommendationsSection } from '@/features/dashboard/components/RecommendationsSection'
@@ -18,7 +19,9 @@ export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
   const summary = await getFinancialSummary(7)
+  const ads = await getAdsSummary(summary.marginRate || 0.122)
   const avgUnitPrice = summary.unitsSold > 0 ? summary.grossSales / summary.unitsSold : 0
+  const netProfitAfterAds = summary.netProfit - (ads?.cost ?? 0)
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -36,19 +39,15 @@ export default async function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <FinancialSummaryCard summary={summary} />
+          <FinancialSummaryCard summary={summary} ads={ads} />
 
-          <Suspense fallback={<CardSkeleton label="Mercado Ads" />}>
-            <AdsSection marginRate={summary.marginRate || 0.122} />
-          </Suspense>
+          <AdsWarningCard ads={ads} />
 
           <Suspense fallback={<CardSkeleton label="meta" />}>
-            <GoalSection currentAmount={summary.netProfit} previousAmount={summary.previousPeriod.netProfit} />
+            <GoalSection currentAmount={netProfitAfterAds} previousAmount={summary.previousPeriod.netProfit} />
           </Suspense>
 
-          <Suspense fallback={<CardSkeleton label="calculadora" />}>
-            <CalculatorSection summary={summary} avgUnitPrice={avgUnitPrice} />
-          </Suspense>
+          <Calculator marginRate={summary.marginRate} avgUnitPrice={avgUnitPrice} ads={ads} />
 
           <div className="md:col-span-2">
             <Suspense fallback={<CardSkeleton label="historial de ventas" />}>
@@ -64,7 +63,7 @@ export default async function DashboardPage() {
 
           <div className="md:col-span-2">
             <Suspense fallback={<CardSkeleton label="consejos" />}>
-              <RecommendationsSection summary={summary} />
+              <RecommendationsSection summary={summary} ads={ads} />
             </Suspense>
           </div>
 
