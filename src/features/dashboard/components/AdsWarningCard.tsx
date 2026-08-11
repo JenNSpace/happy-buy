@@ -1,7 +1,19 @@
 import { formatCOP } from '@/shared/utils/format'
+import { friendlyErrorMessage } from '@/shared/utils/classify-error'
 import type { AdsSummary } from '../types'
 
-export function AdsWarningCard({ ads }: { ads: AdsSummary | null }) {
+export function AdsWarningCard({ ads, error }: { ads: AdsSummary | null; error?: Error | null }) {
+  if (error) {
+    const { title, body } = friendlyErrorMessage(error)
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-gray-900">Mercado Ads</h2>
+        <p className="mt-2 text-sm font-medium text-amber-800">{title}</p>
+        <p className="mt-1 text-sm text-amber-700">{body}</p>
+      </div>
+    )
+  }
+
   if (!ads) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">

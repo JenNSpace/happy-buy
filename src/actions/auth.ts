@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 export async function login(formData: FormData) {
   const supabase = await createClient()
 
-  const { error } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email: formData.get('email') as string,
     password: formData.get('password') as string,
   })
@@ -16,8 +16,14 @@ export async function login(formData: FormData) {
     return { error: error.message }
   }
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', data.user.id)
+    .single()
+
   revalidatePath('/', 'layout')
-  redirect('/dashboard')
+  redirect(profile?.role === 'bodega' ? '/logistica' : '/dashboard')
 }
 
 export async function signup(formData: FormData) {

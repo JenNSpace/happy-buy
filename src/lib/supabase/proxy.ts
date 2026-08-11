@@ -29,7 +29,9 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard')
+  const isProtectedRoute =
+    request.nextUrl.pathname.startsWith('/dashboard') ||
+    request.nextUrl.pathname.startsWith('/logistica')
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login') ||
                       request.nextUrl.pathname.startsWith('/signup')
 
@@ -38,7 +40,9 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (isAuthRoute && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url))
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    const destination = profile?.role === 'bodega' ? '/logistica' : '/dashboard'
+    return NextResponse.redirect(new URL(destination, request.url))
   }
 
   return supabaseResponse

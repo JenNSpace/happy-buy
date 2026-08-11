@@ -42,3 +42,19 @@ export async function mlGet<T>(path: string, extraHeaders?: Record<string, strin
 
   return res.json() as Promise<T>
 }
+
+export async function mlGetBinary(path: string): Promise<ArrayBuffer> {
+  const token = await getAccessToken()
+
+  const res = await fetch(`https://api.mercadolibre.com${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`ML API ${path} -> ${res.status}: ${body}`)
+  }
+
+  return res.arrayBuffer()
+}

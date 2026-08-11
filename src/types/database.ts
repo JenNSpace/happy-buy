@@ -1,10 +1,30 @@
+export type UserRole = 'admin' | 'bodega'
+
 export interface Profile {
   id: string
   email: string
   full_name: string | null
   avatar_url: string | null
+  role: UserRole
+  warehouse_id: string | null
   created_at: string
   updated_at: string
+}
+
+export interface Warehouse {
+  id: string
+  name: string
+  fee_per_package: number
+  created_at: string
+}
+
+export interface Shipment {
+  id: number
+  order_id: number
+  warehouse_id: string | null
+  delivered_at: string | null
+  delivered_by: string | null
+  created_at: string
 }
 
 export interface Goal {
@@ -45,6 +65,16 @@ export interface Database {
         Row: AdsDailySnapshot
         Insert: Omit<AdsDailySnapshot, 'id' | 'created_at'> & { id?: string; created_at?: string }
         Update: Partial<Omit<AdsDailySnapshot, 'id'>>
+      }
+      warehouses: {
+        Row: Warehouse
+        Insert: Omit<Warehouse, 'id' | 'created_at'> & { id?: string; created_at?: string }
+        Update: Partial<Omit<Warehouse, 'id'>>
+      }
+      shipments: {
+        Row: Shipment
+        Insert: Omit<Shipment, 'created_at'> & { created_at?: string }
+        Update: Partial<Omit<Shipment, 'id'>>
       }
     }
   }
