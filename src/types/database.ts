@@ -48,6 +48,73 @@ export interface AdsDailySnapshot {
   created_at: string
 }
 
+export interface Product {
+  id: string
+  code: string
+  name: string
+  short_name: string
+  base_unit: string
+  active: boolean
+  created_at: string
+}
+
+export interface ProductListing {
+  ml_item_id: string
+  user_product_id: string
+  product_id: string
+  units_per_sale: number
+  auto_mapped: boolean
+  created_at: string
+}
+
+export type InventoryMovementType = 'entrada_compra' | 'salida_venta' | 'ajuste'
+
+export interface InventoryMovement {
+  id: string
+  product_id: string
+  warehouse_id: string
+  qty: number
+  type: InventoryMovementType
+  shipment_id: number | null
+  purchase_id: string | null
+  note: string | null
+  created_by: string | null
+  created_at: string
+}
+
+export interface StockByWarehouseRow {
+  product_id: string
+  warehouse_id: string
+  stock: number
+}
+
+export type PurchaseStatus = 'pedido' | 'recibido'
+
+export interface PaymentMethod {
+  id: string
+  name: string
+  created_at: string
+}
+
+export interface Purchase {
+  id: string
+  product_id: string
+  platform: string
+  quantity: number
+  total_cost: number
+  other_cost: number
+  other_cost_note: string | null
+  eta: string | null
+  status: PurchaseStatus
+  warehouse_id: string | null
+  payment_method_id: string | null
+  paid: boolean
+  received_at: string | null
+  created_by: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -75,6 +142,31 @@ export interface Database {
         Row: Shipment
         Insert: Omit<Shipment, 'created_at'> & { created_at?: string }
         Update: Partial<Omit<Shipment, 'id'>>
+      }
+      products: {
+        Row: Product
+        Insert: Omit<Product, 'id' | 'created_at'> & { id?: string; created_at?: string }
+        Update: Partial<Omit<Product, 'id'>>
+      }
+      product_listings: {
+        Row: ProductListing
+        Insert: Omit<ProductListing, 'created_at'> & { created_at?: string }
+        Update: Partial<Omit<ProductListing, 'ml_item_id'>>
+      }
+      inventory_movements: {
+        Row: InventoryMovement
+        Insert: Omit<InventoryMovement, 'id' | 'created_at'> & { id?: string; created_at?: string }
+        Update: Partial<Omit<InventoryMovement, 'id'>>
+      }
+      purchases: {
+        Row: Purchase
+        Insert: Omit<Purchase, 'id' | 'created_at' | 'updated_at'> & { id?: string; created_at?: string; updated_at?: string }
+        Update: Partial<Omit<Purchase, 'id'>>
+      }
+      payment_methods: {
+        Row: PaymentMethod
+        Insert: Omit<PaymentMethod, 'id' | 'created_at'> & { id?: string; created_at?: string }
+        Update: Partial<Omit<PaymentMethod, 'id'>>
       }
     }
   }

@@ -4,6 +4,7 @@ import { getPendingShipmentsForAdmin } from '@/features/logistica/services/get-p
 import { getBodegaShipments } from '@/features/logistica/services/get-bodega-shipments'
 import { getDeliveredToday } from '@/features/logistica/services/get-delivered-today'
 import { getMyWarehouseEarningsThisMonth, getAllWarehouseEarningsThisMonth } from '@/features/logistica/services/get-warehouse-earnings'
+import { getShortNameMap } from '@/features/inventario/services/get-product-catalog'
 import { AdminLogisticsBoard } from '@/features/logistica/components/AdminLogisticsBoard'
 import { BodegaShipmentCard } from '@/features/logistica/components/BodegaShipmentCard'
 import { DeliveredTodaySection } from '@/features/logistica/components/DeliveredTodaySection'
@@ -33,17 +34,18 @@ export default async function LogisticaPage() {
     .single<Profile>()
 
   if (profile?.role === 'admin') {
-    const [shipments, { data: warehouses }, allEarnings] = await Promise.all([
+    const [shipments, { data: warehouses }, allEarnings, shortNames] = await Promise.all([
       getPendingShipmentsForAdmin(),
       supabase.from('warehouses').select('*').order('name'),
       getAllWarehouseEarningsThisMonth(),
+      getShortNameMap(),
     ])
 
     return (
       <div className="mx-auto max-w-7xl space-y-6 p-8">
         <h2 className="text-2xl font-bold text-gray-900">Logística</h2>
         <AdminEarningsSummary earnings={allEarnings} />
-        <AdminLogisticsBoard shipments={shipments} warehouses={warehouses ?? []} />
+        <AdminLogisticsBoard shipments={shipments} warehouses={warehouses ?? []} shortNames={shortNames} />
       </div>
     )
   }
@@ -54,6 +56,7 @@ export default async function LogisticaPage() {
   const shipments = await getBodegaShipments()
   const delivered = await getDeliveredToday()
   const earnings = await getMyWarehouseEarningsThisMonth()
+  const shortNames = await getShortNameMap()
   const name = profile?.full_name ?? 'de nuevo'
 
   return (
@@ -70,13 +73,13 @@ export default async function LogisticaPage() {
           <UrgencyBanner deadlines={shipments.map((s) => s.deadline)} />
           <div className="space-y-3">
             {shipments.map((s) => (
-              <BodegaShipmentCard key={s.shipmentId} shipment={s} />
+              <BodegaShipmentCard key={s.shipmentId} shipment={s} shortNames={shortNames} />
             ))}
           </div>
         </>
       )}
 
-      <DeliveredTodaySection shipments={delivered} />
+      <DeliveredTodaySection shipments={delivered} shortNames={shortNames} />
       {earnings && <WarehouseEarningsTable earnings={earnings} />}
     </div>
   )

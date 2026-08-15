@@ -1,6 +1,7 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import { needsDispatch, type MlShipmentCore } from './parse-shipment'
+import { syncSaleMovements, type SaleLine } from '@/features/inventario/services/sync-sale-movements'
 
 /**
  * ML itself is the source of truth for "was this actually handed to the
@@ -12,14 +13,28 @@ import { needsDispatch, type MlShipmentCore } from './parse-shipment'
  * entregado" — this fills it in with ML's real `date_shipped`, so the
  * local record self-corrects on the next page load instead of relying on
  * a manual click as the only way it ever gets recorded.
+ *
+ * Also syncs the inventory decrement (see sync-sale-movements.ts) — both
+ * for shipments this call newly marks delivered, and as a backstop for
+ * ones already delivered before this existed (falls back to the
+ * caller-supplied warehouseId when the update matches nothing).
  */
-export async function syncAutoDelivered(shipmentId: number, details: MlShipmentCore): Promise<void> {
+export async function syncAutoDelivered(
+  shipmentId: number,
+  details: MlShipmentCore,
+  warehouseId: string | null,
+  items: SaleLine[]
+): Promise<void> {
   if (needsDispatch(details)) return
 
   const supabase = await createClient()
-  await supabase
+  const { data } = await supabase
     .from('shipments')
     .update({ delivered_at: details.status_history.date_shipped ?? new Date().toISOString() })
     .eq('id', shipmentId)
     .is('delivered_at', null)
+    .select('warehouse_id')
+    .maybeSingle()
+
+  await syncSaleMovements(shipmentId, data?.warehouse_id ?? warehouseId, items)
 }

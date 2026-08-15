@@ -17,7 +17,13 @@ const CARD_BORDER_STYLE = {
   unknown: 'border-gray-200 bg-white',
 } as const
 
-export function BodegaShipmentCard({ shipment }: { shipment: BodegaShipment }) {
+export function BodegaShipmentCard({
+  shipment,
+  shortNames,
+}: {
+  shipment: BodegaShipment
+  shortNames: Record<string, string>
+}) {
   const router = useRouter()
   const [delivering, setDelivering] = useState(false)
   const [delivered, setDelivered] = useState(false)
@@ -30,7 +36,10 @@ export function BodegaShipmentCard({ shipment }: { shipment: BodegaShipment }) {
 
   async function handleDeliver() {
     setDelivering(true)
-    const result = await markDelivered(shipment.shipmentId)
+    const result = await markDelivered(
+      shipment.shipmentId,
+      shipment.items.map((i) => ({ itemId: i.itemId, quantity: i.quantity }))
+    )
     setDelivering(false)
     if (!result?.error) {
       setDelivered(true)
@@ -55,7 +64,13 @@ export function BodegaShipmentCard({ shipment }: { shipment: BodegaShipment }) {
           </div>
           <div className="space-y-1.5">
             {shipment.items.map((item, i) => (
-              <ProductLine key={i} itemId={item.itemId} title={item.description} quantity={item.quantity} />
+              <ProductLine
+                key={i}
+                itemId={item.itemId}
+                title={item.description}
+                quantity={item.quantity}
+                shortNames={shortNames}
+              />
             ))}
           </div>
           <p className="mt-1 text-sm text-gray-500">{shipment.address}</p>

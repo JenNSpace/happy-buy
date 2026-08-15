@@ -100,13 +100,22 @@ export async function getPendingShipmentsForAdmin(): Promise<PendingShipment[]> 
   )
   const enriched = ordersWithShipping.map((order, i) => ({ order, details: details[i] }))
 
-  await Promise.all(
-    enriched.filter(({ details }) => !needsDispatch(details)).map(({ details }) => syncAutoDelivered(details.id, details))
-  )
-
   const supabase = await createClient()
   const { data: localShipments } = await supabase.from('shipments').select('*')
   const localById = new Map<number, Shipment>((localShipments ?? []).map((s) => [s.id, s as Shipment]))
+
+  await Promise.all(
+    enriched
+      .filter(({ details }) => !needsDispatch(details))
+      .map(({ order, details }) =>
+        syncAutoDelivered(
+          details.id,
+          details,
+          localById.get(order.shipping.id)?.warehouse_id ?? null,
+          order.order_items.map((i) => ({ itemId: i.item.id, quantity: i.quantity }))
+        )
+      )
+  )
 
   return enriched
     .filter(({ details }) => needsDispatch(details))

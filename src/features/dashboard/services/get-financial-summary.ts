@@ -1,6 +1,7 @@
 import 'server-only'
 import { mlGet } from './ml-client'
 import { ML_USER_ID, computeOrderLineMetrics } from '../constants'
+import { getListingMap, type ListingInfo } from '@/features/inventario/services/get-product-catalog'
 import type { FinancialSummary, PeriodMetrics } from '../types'
 
 interface MlOrderItem {
@@ -21,7 +22,12 @@ interface MlOrdersSearchResponse {
   results: MlOrder[]
 }
 
-async function fetchPeriodMetrics(from: Date, to: Date, periodLabel: string): Promise<PeriodMetrics> {
+async function fetchPeriodMetrics(
+  from: Date,
+  to: Date,
+  periodLabel: string,
+  listingMap: Map<string, ListingInfo>
+): Promise<PeriodMetrics> {
   const fmt = (d: Date) => d.toISOString().slice(0, 19) + '.000-00:00'
 
   const query = new URLSearchParams({
@@ -45,9 +51,10 @@ async function fetchPeriodMetrics(from: Date, to: Date, periodLabel: string): Pr
 
   for (const order of paidOrders) {
     for (const line of order.order_items) {
-      const m = computeOrderLineMetrics(line.item.id, line.quantity, line.unit_price)
+      const unitsPerSale = listingMap.get(line.item.id)?.unitsPerSale ?? 1
+      const m = computeOrderLineMetrics(line.quantity, line.unit_price, unitsPerSale)
       grossSales += m.grossSales
-      unitsSold += line.quantity
+      unitsSold += line.quantity * unitsPerSale
       mlCommission += m.mlCommission
       shippingCost += m.shippingCost
       productCost += m.productCost
@@ -78,9 +85,10 @@ export async function getFinancialSummary(days = 7): Promise<FinancialSummary> {
   const previousTo = from
   const previousFrom = new Date(from.getTime() - days * 24 * 60 * 60 * 1000)
 
+  const listingMap = await getListingMap()
   const [current, previousPeriod] = await Promise.all([
-    fetchPeriodMetrics(from, to, `Últimos ${days} días`),
-    fetchPeriodMetrics(previousFrom, previousTo, `${days} días anteriores`),
+    fetchPeriodMetrics(from, to, `Últimos ${days} días`, listingMap),
+    fetchPeriodMetrics(previousFrom, previousTo, `${days} días anteriores`, listingMap),
   ])
 
   return { ...current, previousPeriod }

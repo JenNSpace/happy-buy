@@ -38,16 +38,26 @@ export async function getBodegaShipments(): Promise<BodegaShipment[]> {
   const supabase = await createClient()
   const { data: localShipments } = await supabase
     .from('shipments')
-    .select('id')
+    .select('id, warehouse_id')
     .is('delivered_at', null)
 
   if (!localShipments || localShipments.length === 0) return []
 
   const details = await Promise.all(localShipments.map((s) => mlGet<MlShipment>(`/shipments/${s.id}`)))
+  const warehouseByShipmentId = new Map(localShipments.map((s) => [s.id, s.warehouse_id]))
 
   const stillPending = details.filter(needsDispatch)
   const alreadyShipped = details.filter((d) => !needsDispatch(d))
-  await Promise.all(alreadyShipped.map((s) => syncAutoDelivered(s.id, s)))
+  await Promise.all(
+    alreadyShipped.map((s) =>
+      syncAutoDelivered(
+        s.id,
+        s,
+        warehouseByShipmentId.get(s.id) ?? null,
+        s.shipping_items.map((i) => ({ itemId: i.id, quantity: i.quantity }))
+      )
+    )
+  )
 
   const shipments: BodegaShipment[] = stillPending.map((shipment) => {
     const fulfillmentType = getFulfillmentType(shipment)

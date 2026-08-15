@@ -80,7 +80,15 @@ const WAREHOUSE_THEMES: ColumnTheme[] = [
   },
 ]
 
-function ShipmentCard({ shipment, warehouses }: { shipment: PendingShipment; warehouses: Warehouse[] }) {
+function ShipmentCard({
+  shipment,
+  warehouses,
+  shortNames,
+}: {
+  shipment: PendingShipment
+  warehouses: Warehouse[]
+  shortNames: Record<string, string>
+}) {
   const [warehouseId, setWarehouseId] = useState(shipment.warehouseId ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -128,7 +136,7 @@ function ShipmentCard({ shipment, warehouses }: { shipment: PendingShipment; war
       <div className="mb-2 space-y-1.5">
         {shipment.items.map((item, i) => (
           <div key={i}>
-            <ProductLine itemId={item.itemId} title={item.title} quantity={item.quantity} />
+            <ProductLine itemId={item.itemId} title={item.title} quantity={item.quantity} shortNames={shortNames} />
             {(item.attributes || item.sku) && (
               <p className="ml-11 text-[11px] text-gray-400">
                 {item.attributes}
@@ -195,12 +203,14 @@ function ShipmentColumn({
   warehouses,
   emptyLabel,
   theme,
+  shortNames,
 }: {
   title: string
   items: PendingShipment[]
   warehouses: Warehouse[]
   emptyLabel: string
   theme: ColumnTheme
+  shortNames: Record<string, string>
 }) {
   return (
     <div className={`flex flex-col overflow-hidden rounded-xl border-2 ${theme.accentBorder} bg-white shadow-sm`}>
@@ -215,7 +225,7 @@ function ShipmentColumn({
         {items.length === 0 ? (
           <p className="p-4 text-xs text-gray-400">{emptyLabel}</p>
         ) : (
-          items.map((s) => <ShipmentCard key={s.shipmentId} shipment={s} warehouses={warehouses} />)
+          items.map((s) => <ShipmentCard key={s.shipmentId} shipment={s} warehouses={warehouses} shortNames={shortNames} />)
         )}
       </div>
     </div>
@@ -225,9 +235,11 @@ function ShipmentColumn({
 export function AdminLogisticsBoard({
   shipments,
   warehouses,
+  shortNames,
 }: {
   shipments: PendingShipment[]
   warehouses: Warehouse[]
+  shortNames: Record<string, string>
 }) {
   const groups = useMemo(() => {
     const unassigned = sortByUrgency(shipments.filter((s) => !s.warehouseId))
@@ -257,6 +269,7 @@ export function AdminLogisticsBoard({
           warehouses={warehouses}
           emptyLabel="Todo lo pendiente ya tiene bodega asignada."
           theme={UNASSIGNED_THEME}
+          shortNames={shortNames}
         />
 
         {groups.byWarehouse.map(({ warehouse, items }, i) => (
@@ -267,6 +280,7 @@ export function AdminLogisticsBoard({
             warehouses={warehouses}
             emptyLabel="Nada asignado a esta bodega por ahora."
             theme={WAREHOUSE_THEMES[i % WAREHOUSE_THEMES.length]}
+            shortNames={shortNames}
           />
         ))}
       </div>

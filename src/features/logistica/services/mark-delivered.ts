@@ -2,8 +2,9 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { syncSaleMovements, type SaleLine } from '@/features/inventario/services/sync-sale-movements'
 
-export async function markDelivered(shipmentId: number) {
+export async function markDelivered(shipmentId: number, items: SaleLine[] = []) {
   const supabase = await createClient()
   const {
     data: { user },
@@ -13,14 +14,18 @@ export async function markDelivered(shipmentId: number) {
     return { error: 'No autenticado' }
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('shipments')
     .update({ delivered_at: new Date().toISOString(), delivered_by: user.id })
     .eq('id', shipmentId)
+    .select('warehouse_id')
+    .single()
 
   if (error) {
     return { error: error.message }
   }
+
+  await syncSaleMovements(shipmentId, data.warehouse_id, items)
 
   revalidatePath('/logistica')
   return { success: true }

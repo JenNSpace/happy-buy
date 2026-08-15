@@ -1,6 +1,7 @@
 import 'server-only'
 import { mlGet } from './ml-client'
 import { ML_USER_ID, computeOrderLineMetrics } from '../constants'
+import { getListingMap, type ListingInfo } from '@/features/inventario/services/get-product-catalog'
 import type { SalesHistoryPoint } from '../types'
 
 interface MlOrderItem {
@@ -23,7 +24,7 @@ interface MlOrdersSearchResponse {
 const PAGE_SIZE = 50
 const MAX_ORDERS = 500 // safety cap, well above real order volume — avoids runaway pagination
 
-function toPoints(orders: MlOrder[]): SalesHistoryPoint[] {
+function toPoints(orders: MlOrder[], listingMap: Map<string, ListingInfo>): SalesHistoryPoint[] {
   return orders
     .filter((o) => o.status === 'paid')
     .map((order) => {
@@ -32,10 +33,11 @@ function toPoints(orders: MlOrder[]): SalesHistoryPoint[] {
       let unitsSold = 0
 
       for (const line of order.order_items) {
-        const m = computeOrderLineMetrics(line.item.id, line.quantity, line.unit_price)
+        const unitsPerSale = listingMap.get(line.item.id)?.unitsPerSale ?? 1
+        const m = computeOrderLineMetrics(line.quantity, line.unit_price, unitsPerSale)
         grossSales += m.grossSales
         netProfit += m.netProfit
-        unitsSold += line.quantity
+        unitsSold += line.quantity * unitsPerSale
       }
 
       return { dateCreated: order.date_created, grossSales, netProfit, unitsSold }
@@ -64,8 +66,8 @@ export async function getSalesHistory(days = 90): Promise<SalesHistoryPoint[]> {
     return `/orders/search?${query.toString()}`
   }
 
-  const first = await mlGet<MlOrdersSearchResponse>(searchUrl(0))
-  const points = toPoints(first.results)
+  const [first, listingMap] = await Promise.all([mlGet<MlOrdersSearchResponse>(searchUrl(0)), getListingMap()])
+  const points = toPoints(first.results, listingMap)
 
   const total = Math.min(first.paging.total, MAX_ORDERS)
   const remainingOffsets: number[] = []
@@ -78,7 +80,7 @@ export async function getSalesHistory(days = 90): Promise<SalesHistoryPoint[]> {
       remainingOffsets.map((offset) => mlGet<MlOrdersSearchResponse>(searchUrl(offset)))
     )
     for (const page of pages) {
-      points.push(...toPoints(page.results))
+      points.push(...toPoints(page.results, listingMap))
     }
   }
 
