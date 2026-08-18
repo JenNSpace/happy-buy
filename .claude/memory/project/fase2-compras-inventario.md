@@ -1,10 +1,19 @@
 # Fase 2 — Compras + Inventario
 
-> Estado al 2026-08-15. Continúa Fase 0 (roles/warehouses) y Fase 1 (Logística),
-> ambas ya en producción desde 2026-08-12. Fase 2 está construida y probada
-> en vivo (local + base de datos Supabase compartida real), **pero NO
-> desplegada a Vercel todavía** — no asumir que `/compras` es visible para
-> usuarios reales hasta confirmar el deploy.
+> Estado al 2026-08-18: **desplegada a producción** (commits `e6069a7` y
+> `882c43f`). Continúa Fase 0 (roles/warehouses) y Fase 1 (Logística), en
+> producción desde 2026-08-12.
+>
+> El deploy del 2026-08-18 trajo además correcciones grandes que cambian cómo
+> se calcula la plata y cómo se lee el estado de despacho — ver
+> `reference/ml-costos-reales-por-pedido.md` y
+> `reference/logistica-estado-real-de-despacho.md`, más el modelo de pagos por
+> quincena en `project/operacion-bodegas-y-pagos.md`.
+>
+> Nuevas tablas desde entonces: `payment_methods`, `warehouse_payments`,
+> `warehouse_adjustments`; nuevas columnas `shipments.fulfillment_type`,
+> `warehouses.is_fulfillment`, `warehouses.fee_per_package_flex/_agencia`
+> (reemplazan `fee_per_package`, que se eliminó).
 
 ## Fase 2A — Catálogo + Inventario (construida)
 

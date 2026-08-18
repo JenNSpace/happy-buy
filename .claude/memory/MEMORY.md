@@ -11,15 +11,19 @@
 
 ## project/ — Proyectos y decisiones activas
 
-- [Fase 2 — Compras + Inventario](project/fase2-compras-inventario.md) — construida y probada en vivo al 2026-08-15, NO desplegada a producción; qué falta (import del sheet de Enrique, deploy, Fase 2C/2D)
+- [Fase 2 — Compras + Inventario](project/fase2-compras-inventario.md) — construida, probada y **desplegada a producción el 2026-08-18**
+- [Operación: bodegas, tarifas y pagos](project/operacion-bodegas-y-pagos.md) — quién es quién, cuánto cuesta cada canal, pagos por quincena con ajustes manuales, y por qué no se le baja el pago a las bodegas
 
 ## feedback/ — Correcciones y preferencias
 
 - [UI en el idioma del negocio](feedback/ui-lenguaje-del-negocio.md) — no exponer conceptos internos del schema (tipos de movimiento) en la UI; no construir features sin confirmar que se usan
 - [Confirmaciones deben quedar visibles](feedback/confirmaciones-visibles.md) — no cerrar un panel justo cuando muestra el mensaje de éxito; causó un registro duplicado real
+- [Verificar contra la pantalla real](feedback/verificar-contra-la-ui-real.md) — una auditoría "todo bien" falló por comparar la BD contra la API en vez de contra lo que ML le muestra a la usuaria
 
 ## reference/ — Dónde encontrar cosas, patrones, soluciones
 
+- [ML: costos reales por pedido](reference/ml-costos-reales-por-pedido.md) — **LEY del proyecto**: nada de promedios. Comisión variable por producto, Flex bonifica en vez de cobrar, de dónde sale cada dato
+- [Logística: `status` vs `substatus`](reference/logistica-estado-real-de-despacho.md) — por qué un paquete ya entregado en agencia seguía saliendo como pendiente, y los 16 envíos que nunca entraron al sistema
 - [Next.js: 'use server' solo exporta funciones async](reference/nextjs-use-server-solo-funciones.md) — exportar una constante desde ese archivo tira TODOS los exports, no solo la constante
 - [Supabase: lista blanca de Redirect URLs](reference/supabase-redirect-url-whitelist.md) — por qué el reset de contraseña caía en /login sin poder cambiar nada
 - [Claude Code: conectores de cuenta no se refrescan solos](reference/claude-code-conectores-de-cuenta.md) — Drive activo en claude.ai pero necesita sesión nueva de Claude Code para aparecer
