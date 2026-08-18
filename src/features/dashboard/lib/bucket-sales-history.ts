@@ -72,24 +72,40 @@ export function bucketSalesHistory(
       .map(([, bucket]) => bucket)
   }
 
-  // week: rolling 7-day windows counting back from now, not calendar-ISO weeks
+  // week: calendar weeks, Monday-Sunday — not a rolling 7-day window (confirmed by the user 2026-08-15).
+  const mondayOf = (d: Date): Date => {
+    const day = d.getDay() // 0=Sun..6=Sat
+    const diffToMonday = day === 0 ? 6 : day - 1
+    const monday = new Date(d)
+    monday.setHours(0, 0, 0, 0)
+    monday.setDate(d.getDate() - diffToMonday)
+    return monday
+  }
+  const thisWeekMonday = mondayOf(new Date(now)).getTime()
+
   const map = new Map<number, HistoryBucket>()
   for (const p of points) {
-    const ageDays = Math.floor((now - new Date(p.dateCreated).getTime()) / (24 * 60 * 60 * 1000))
-    const weekIndex = Math.floor(ageDays / 7)
-    if (!map.has(weekIndex)) {
-      map.set(weekIndex, {
-        key: String(weekIndex),
-        label: weekIndex === 0 ? 'Esta semana' : `Hace ${weekIndex + 1} sem.`,
-        value: 0,
-        orderCount: 0,
-      })
+    const monday = mondayOf(new Date(p.dateCreated))
+    const key = monday.getTime()
+    if (!map.has(key)) {
+      let label: string
+      if (key === thisWeekMonday) {
+        label = 'Esta semana'
+      } else {
+        const sunday = new Date(monday)
+        sunday.setDate(monday.getDate() + 6)
+        label =
+          monday.getMonth() === sunday.getMonth()
+            ? `${monday.getDate()}-${sunday.getDate()} ${MONTH_LABELS[sunday.getMonth()]}`
+            : `${monday.getDate()} ${MONTH_LABELS[monday.getMonth()]} - ${sunday.getDate()} ${MONTH_LABELS[sunday.getMonth()]}`
+      }
+      map.set(key, { key: String(key), label, value: 0, orderCount: 0 })
     }
-    const bucket = map.get(weekIndex)!
+    const bucket = map.get(key)!
     bucket.value += p[metric]
     bucket.orderCount += 1
   }
   return Array.from(map.entries())
-    .sort((a, b) => b[0] - a[0]) // largest weekIndex (oldest) first, left to right
+    .sort((a, b) => a[0] - b[0]) // oldest week first, left to right
     .map(([, bucket]) => bucket)
 }

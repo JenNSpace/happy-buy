@@ -32,12 +32,38 @@ export function getBogotaTodayStart(now: Date = new Date()): string {
   return `${y}-${m}-${d}T00:00:00${BOGOTA_UTC_OFFSET}`
 }
 
-/** Midnight on the 1st of the current month, Bogotá local time — for "this month" bounds (e.g. warehouse fee payouts). */
+/** Midnight on the 1st of the current month, Bogotá local time. */
 export function getBogotaMonthStart(now: Date = new Date()): string {
   const bogotaNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }))
   const y = bogotaNow.getFullYear()
   const m = String(bogotaNow.getMonth() + 1).padStart(2, '0')
   return `${y}-${m}-01T00:00:00${BOGOTA_UTC_OFFSET}`
+}
+
+/**
+ * The bodegas are paid per FORTNIGHT, not per month — confirmed by the user
+ * 2026-08-18 (Enrique "paga por quincena"; Daniel was already paid through
+ * 15-ago). Periods are the 1st-15th and the 16th-end of month, Bogotá local.
+ * Scoping earnings to the current fortnight makes the figure reset itself when
+ * the period rolls over, so there is nothing to "mark as paid" for the normal
+ * case — the exception is a fortnight that closed while still unpaid, which
+ * needs a real payment record rather than a date window.
+ */
+export function getBogotaFortnightStart(now: Date = new Date()): string {
+  const bogotaNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }))
+  const y = bogotaNow.getFullYear()
+  const m = String(bogotaNow.getMonth() + 1).padStart(2, '0')
+  const day = bogotaNow.getDate() <= 15 ? '01' : '16'
+  return `${y}-${m}-${day}T00:00:00${BOGOTA_UTC_OFFSET}`
+}
+
+/** Human label for the current fortnight, e.g. "16–31 de agosto". */
+export function getFortnightLabel(now: Date = new Date()): string {
+  const bogotaNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Bogota' }))
+  const monthName = bogotaNow.toLocaleDateString('es-CO', { month: 'long', timeZone: 'America/Bogota' })
+  if (bogotaNow.getDate() <= 15) return `1–15 de ${monthName}`
+  const lastDay = new Date(bogotaNow.getFullYear(), bogotaNow.getMonth() + 1, 0).getDate()
+  return `16–${lastDay} de ${monthName}`
 }
 
 /** Today's cutoff instant for this fulfillment type, or null if none applies (e.g. Full). */

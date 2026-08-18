@@ -4,21 +4,22 @@ import type { Goal } from '@/types/database'
 export function GoalProgressCard({
   goal,
   currentAmount,
-  previousAmount,
+  previousSales,
+  previousProfit,
 }: {
   goal: Goal | null
   currentAmount: number
-  previousAmount: number
+  previousSales: number
+  previousProfit: number
 }) {
-  const vsLastWeek =
-    previousAmount !== 0 ? ((currentAmount - previousAmount) / Math.abs(previousAmount)) * 100 : null
-
   if (!goal) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold text-gray-900">Meta semanal</h2>
         <p className="mt-2 text-sm text-gray-500">Todavía no hay una meta configurada.</p>
-        <p className="mt-1 text-xs text-gray-400">La semana pasada: {formatCOP(previousAmount)}</p>
+        <p className="mt-1 text-xs text-gray-400">
+          Semana pasada — ventas: {formatCOP(previousSales)} · ganancia: {formatCOP(previousProfit)}
+        </p>
       </div>
     )
   }
@@ -43,12 +44,9 @@ export function GoalProgressCard({
       <p className="mt-3 text-sm text-gray-600">
         {formatCOP(currentAmount)} de {formatCOP(goal.target_amount)}
       </p>
-      {vsLastWeek !== null && (
-        <p className="mt-1 text-xs text-gray-400">
-          {vsLastWeek >= 0 ? '+' : ''}
-          {vsLastWeek.toFixed(0)}% vs. la semana pasada ({formatCOP(previousAmount)})
-        </p>
-      )}
+      <p className="mt-1 text-xs text-gray-400">
+        Semana pasada — ventas: {formatCOP(previousSales)} · ganancia: {formatCOP(previousProfit)}
+      </p>
     </div>
   )
 }

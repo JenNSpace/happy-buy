@@ -4,17 +4,24 @@ import { GoalSettingsForm } from './GoalSettingsForm'
 
 export async function GoalSection({
   currentAmount,
-  previousAmount,
+  previousSales,
+  previousProfit,
 }: {
   currentAmount: number
-  previousAmount: number
+  previousSales: number
+  previousProfit: number
 }) {
   const goal = await getGoal()
 
   return (
     <div className="space-y-2">
-      <GoalProgressCard goal={goal} currentAmount={currentAmount} previousAmount={previousAmount} />
-      <GoalSettingsForm currentTarget={goal?.target_amount ?? null} previousAmount={previousAmount} />
+      <GoalProgressCard
+        goal={goal}
+        currentAmount={currentAmount}
+        previousSales={previousSales}
+        previousProfit={previousProfit}
+      />
+      <GoalSettingsForm currentTarget={goal?.target_amount ?? null} previousProfit={previousProfit} />
     </div>
   )
 }

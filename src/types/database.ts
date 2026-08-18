@@ -14,7 +14,8 @@ export interface Profile {
 export interface Warehouse {
   id: string
   name: string
-  fee_per_package: number
+  fee_per_package_flex: number
+  fee_per_package_agencia: number
   created_at: string
 }
 
@@ -24,6 +25,8 @@ export interface Shipment {
   warehouse_id: string | null
   delivered_at: string | null
   delivered_by: string | null
+  /** 'flex' | 'full' | 'mercado_envios' | 'other' — ver getFulfillmentType(). Null en envíos de antes de este campo. */
+  fulfillment_type: string | null
   created_at: string
 }
 

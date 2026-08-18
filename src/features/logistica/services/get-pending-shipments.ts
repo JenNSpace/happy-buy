@@ -2,7 +2,13 @@ import 'server-only'
 import { mlGet } from '@/features/dashboard/services/ml-client'
 import { ML_USER_ID } from '@/features/dashboard/constants'
 import { createClient } from '@/lib/supabase/server'
-import { getFulfillmentType, isLabelPrinted, needsDispatch, type MlShipmentCore } from './parse-shipment'
+import {
+  getDispatchState,
+  getFulfillmentType,
+  isLabelPrinted,
+  needsDispatch,
+  type MlShipmentCore,
+} from './parse-shipment'
 import { syncAutoDelivered } from './sync-delivered'
 import { getDispatchCutoff } from '../utils/dispatch-cutoff'
 import type { Shipment } from '@/types/database'
@@ -41,7 +47,20 @@ interface MlShipmentDetails extends MlShipmentCore {
 }
 
 const PAGE_SIZE = 50
-const WINDOW_DAYS = 7
+
+/**
+ * Widened from 7 to 30 days in the 2026-08-18 audit. At 7 days, a package
+ * that stalled for 8 days silently VANISHED from the board while still
+ * genuinely needing dispatch — the exact "nos van a faltar paquetes"
+ * failure. The original 7-day bound existed to hide months of stale
+ * `not_delivered` orders, but that job is really done by the
+ * `needsDispatch(status)` filter below, which drops anything ML already
+ * considers shipped. Verified over a 90-day window: zero extra noise.
+ */
+const WINDOW_DAYS = 30
+
+/** Older than this and still undispatched is abnormal — surfaced, never hidden. */
+export const STALE_AFTER_DAYS = 7
 
 /**
  * Admin view: orders from the last 7 days that Mercado Libre still
@@ -110,6 +129,7 @@ export async function getPendingShipmentsForAdmin(): Promise<PendingShipment[]> 
       .map(({ order, details }) =>
         syncAutoDelivered(
           details.id,
+          order.id,
           details,
           localById.get(order.shipping.id)?.warehouse_id ?? null,
           order.order_items.map((i) => ({ itemId: i.item.id, quantity: i.quantity }))
@@ -142,6 +162,7 @@ export async function getPendingShipmentsForAdmin(): Promise<PendingShipment[]> 
         })),
         warehouseId: local?.warehouse_id ?? null,
         deliveredAt: local?.delivered_at ?? null,
+        dispatchState: getDispatchState(details),
       }
     })
     // Already handed off by the warehouse — no longer admin's concern.

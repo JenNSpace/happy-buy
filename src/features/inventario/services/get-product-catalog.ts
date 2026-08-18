@@ -14,10 +14,11 @@ export async function getProducts(): Promise<Product[]> {
 }
 
 /**
- * ml_item_id -> {productId, unitsPerSale}, loaded once per request and
- * passed down into computeOrderLineMetrics/shippingCostForItem call sites
- * (see dashboard/constants.ts) so the pack-size source of truth lives in
- * one DB-backed table instead of the old hardcoded ITEM_PACK_SIZE map.
+ * ml_item_id -> {productId, unitsPerSale}, loaded once per request and passed
+ * down into computeOrderLineMetrics call sites (see dashboard/constants.ts) so
+ * the pack-size source of truth lives in one DB-backed table instead of the
+ * old hardcoded ITEM_PACK_SIZE map. `productId` also keys the real per-product
+ * landed cost (see get-product-costs.ts).
  */
 export async function getListingMap(): Promise<Map<string, ListingInfo>> {
   const supabase = await createClient()

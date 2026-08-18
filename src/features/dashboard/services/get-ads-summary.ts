@@ -33,11 +33,20 @@ export async function getAdvertiserId(): Promise<number> {
   return id
 }
 
-export async function getAdsSummary(marginRate: number, days = 7): Promise<AdsSummary | null> {
+/**
+ * Ad spend for an explicit window. The caller passes the SAME range used for
+ * sales (see getCurrentWeekRange) — previously this defaulted to a rolling
+ * 7 days while the profit card had moved to calendar weeks, so on a Tuesday
+ * it subtracted a full week of ad spend from a day and a half of sales and
+ * showed a profitable week as a loss (found live 2026-08-18).
+ */
+export async function getAdsSummary(
+  marginRate: number,
+  range: { from: Date; to: Date }
+): Promise<AdsSummary | null> {
   const advertiserId = await getAdvertiserId()
 
-  const to = new Date()
-  const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000)
+  const { from, to } = range
   const fmt = (d: Date) => d.toISOString().slice(0, 10)
 
   const metrics = 'clicks,cost,total_amount'

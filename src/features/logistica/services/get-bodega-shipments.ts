@@ -1,7 +1,13 @@
 import 'server-only'
 import { mlGet } from '@/features/dashboard/services/ml-client'
 import { createClient } from '@/lib/supabase/server'
-import { getFulfillmentType, isLabelPrinted, needsDispatch, type MlShipmentCore } from './parse-shipment'
+import {
+  getDispatchState,
+  getFulfillmentType,
+  isLabelPrinted,
+  needsDispatch,
+  type MlShipmentCore,
+} from './parse-shipment'
 import { syncAutoDelivered } from './sync-delivered'
 import { getDispatchCutoff } from '../utils/dispatch-cutoff'
 import type { BodegaShipment } from '../types'
@@ -14,6 +20,7 @@ interface MlShipmentItem {
 
 interface MlShipment extends MlShipmentCore {
   id: number
+  order_id: number
   shipping_items: MlShipmentItem[]
   receiver_address: { address_line: string; city?: { name: string } }
 }
@@ -52,6 +59,7 @@ export async function getBodegaShipments(): Promise<BodegaShipment[]> {
     alreadyShipped.map((s) =>
       syncAutoDelivered(
         s.id,
+        s.order_id,
         s,
         warehouseByShipmentId.get(s.id) ?? null,
         s.shipping_items.map((i) => ({ itemId: i.id, quantity: i.quantity }))
@@ -70,6 +78,7 @@ export async function getBodegaShipments(): Promise<BodegaShipment[]> {
       deadline: getDispatchCutoff(fulfillmentType),
       fulfillmentType,
       printed: isLabelPrinted(shipment),
+      dispatchState: getDispatchState(shipment),
     }
   })
 

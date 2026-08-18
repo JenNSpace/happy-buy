@@ -1,6 +1,6 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
-import { needsDispatch, type MlShipmentCore } from './parse-shipment'
+import { getFulfillmentType, needsDispatch, type MlShipmentCore } from './parse-shipment'
 import { syncSaleMovements, type SaleLine } from '@/features/inventario/services/sync-sale-movements'
 
 /**
@@ -14,13 +14,19 @@ import { syncSaleMovements, type SaleLine } from '@/features/inventario/services
  * local record self-corrects on the next page load instead of relying on
  * a manual click as the only way it ever gets recorded.
  *
- * Also syncs the inventory decrement (see sync-sale-movements.ts) — both
- * for shipments this call newly marks delivered, and as a backstop for
- * ones already delivered before this existed (falls back to the
- * caller-supplied warehouseId when the update matches nothing).
+ * Also syncs the inventory decrement (see sync-sale-movements.ts).
+ *
+ * Creates the local row when one doesn't exist yet. Found in the
+ * 2026-08-18 audit: shipment 47756002876 was dispatched on 14-ago having
+ * never been assigned a warehouse, so there was no row to UPDATE — the
+ * write silently matched nothing, the shipment was never recorded, and its
+ * 2 units of stock were never deducted. An order can leave without ever
+ * being assigned, so "no local row" has to be a real branch, not an
+ * assumption that admin always assigns first.
  */
 export async function syncAutoDelivered(
   shipmentId: number,
+  orderId: number,
   details: MlShipmentCore,
   warehouseId: string | null,
   items: SaleLine[]
@@ -28,13 +34,39 @@ export async function syncAutoDelivered(
   if (needsDispatch(details)) return
 
   const supabase = await createClient()
-  const { data } = await supabase
+  const deliveredAt = details.status_history.date_shipped ?? new Date().toISOString()
+  const fulfillmentType = getFulfillmentType(details)
+
+  const { data: updated } = await supabase
     .from('shipments')
-    .update({ delivered_at: details.status_history.date_shipped ?? new Date().toISOString() })
+    .update({ delivered_at: deliveredAt, fulfillment_type: fulfillmentType })
     .eq('id', shipmentId)
     .is('delivered_at', null)
     .select('warehouse_id')
     .maybeSingle()
 
-  await syncSaleMovements(shipmentId, data?.warehouse_id ?? warehouseId, items)
+  let warehouse = updated?.warehouse_id ?? warehouseId
+
+  // Nothing updated means either "already marked delivered" or "no row at all".
+  if (!updated) {
+    const { data: existing } = await supabase
+      .from('shipments')
+      .select('warehouse_id')
+      .eq('id', shipmentId)
+      .maybeSingle()
+
+    if (existing) {
+      warehouse = existing.warehouse_id ?? warehouseId
+    } else {
+      await supabase.from('shipments').insert({
+        id: shipmentId,
+        order_id: orderId,
+        warehouse_id: warehouseId,
+        delivered_at: deliveredAt,
+        fulfillment_type: fulfillmentType,
+      })
+    }
+  }
+
+  await syncSaleMovements(shipmentId, warehouse, items)
 }

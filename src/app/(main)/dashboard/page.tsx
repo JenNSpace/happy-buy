@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import type { Profile } from '@/types/database'
 import { getFinancialSummary } from '@/features/dashboard/services/get-financial-summary'
+import { getCurrentWeekRange } from '@/features/dashboard/lib/bogota-week'
 import { getAdsSummary } from '@/features/dashboard/services/get-ads-summary'
 import { FinancialSummaryCard } from '@/features/dashboard/components/FinancialSummaryCard'
 import { Calculator } from '@/features/dashboard/components/Calculator'
@@ -37,14 +38,16 @@ export default async function DashboardPage() {
     )
   }
 
-  const summary = await getFinancialSummary(7)
+  const summary = await getFinancialSummary()
 
   // Mercado Ads' endpoint is flaky (confirmed 503s from ML's own infra) —
   // isolate its failure so the rest of the dashboard still loads.
   let ads: AdsSummary | null = null
   let adsError: Error | null = null
   try {
-    ads = await getAdsSummary(summary.marginRate || 0.122)
+    // Same week window as the sales figures — mismatched periods made a
+    // profitable week read as a loss (see getCurrentWeekRange).
+    ads = await getAdsSummary(summary.marginRate || 0.122, getCurrentWeekRange())
   } catch (e) {
     adsError = e instanceof Error ? e : new Error('Error desconocido')
   }
@@ -60,7 +63,11 @@ export default async function DashboardPage() {
         <AdsWarningCard ads={ads} error={adsError} />
 
         <Suspense fallback={<CardSkeleton label="meta" />}>
-          <GoalSection currentAmount={netProfitAfterAds} previousAmount={summary.previousPeriod.netProfit} />
+          <GoalSection
+            currentAmount={netProfitAfterAds}
+            previousSales={summary.previousPeriod.grossSales}
+            previousProfit={summary.previousPeriod.netProfit}
+          />
         </Suspense>
 
         <Calculator marginRate={summary.marginRate} avgUnitPrice={avgUnitPrice} ads={ads} />

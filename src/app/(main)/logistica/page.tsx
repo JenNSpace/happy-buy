@@ -11,6 +11,13 @@ import { DeliveredTodaySection } from '@/features/logistica/components/Delivered
 import { WarehouseEarningsTable } from '@/features/logistica/components/WarehouseEarningsTable'
 import { AdminEarningsSummary } from '@/features/logistica/components/AdminEarningsSummary'
 import { UrgencyBanner } from '@/features/logistica/components/UrgencyBanner'
+import { AutoRefresh } from '@/features/logistica/components/AutoRefresh'
+import { UnassignedDispatchedAlert } from '@/features/logistica/components/UnassignedDispatchedAlert'
+import {
+  syncDispatchedShipments,
+  getUnassignedDispatched,
+} from '@/features/logistica/services/sync-dispatched'
+import { getFullSummary } from '@/features/logistica/services/get-full-summary'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,18 +41,32 @@ export default async function LogisticaPage() {
     .single<Profile>()
 
   if (profile?.role === 'admin') {
-    const [shipments, { data: warehouses }, allEarnings, shortNames] = await Promise.all([
+    // Sequential first: records shipments dispatched without ever being assigned
+    // a warehouse, so the earnings and unassigned lists below see them.
+    await syncDispatchedShipments()
+
+    const [shipments, { data: warehouses }, allEarnings, shortNames, unassigned, fullSummary] = await Promise.all([
       getPendingShipmentsForAdmin(),
-      supabase.from('warehouses').select('*').order('name'),
+      // Full never gets packages assigned — ML dispatches it end to end.
+      supabase.from('warehouses').select('*').eq('is_fulfillment', false).order('name'),
       getAllWarehouseEarningsThisMonth(),
       getShortNameMap(),
+      getUnassignedDispatched(),
+      getFullSummary(),
     ])
 
     return (
       <div className="mx-auto max-w-7xl space-y-6 p-8">
+        <AutoRefresh />
         <h2 className="text-2xl font-bold text-gray-900">Logística</h2>
+        <UnassignedDispatchedAlert rows={unassigned} warehouses={warehouses ?? []} />
         <AdminEarningsSummary earnings={allEarnings} />
-        <AdminLogisticsBoard shipments={shipments} warehouses={warehouses ?? []} shortNames={shortNames} />
+        <AdminLogisticsBoard
+          shipments={shipments}
+          warehouses={warehouses ?? []}
+          shortNames={shortNames}
+          fullSummary={fullSummary}
+        />
       </div>
     )
   }
@@ -61,6 +82,7 @@ export default async function LogisticaPage() {
 
   return (
     <div className="mx-auto max-w-2xl p-8">
+      <AutoRefresh />
       <h2 className="mb-1 text-2xl font-bold text-gray-900">
         ¡{greeting()}, {name}! 👋
       </h2>

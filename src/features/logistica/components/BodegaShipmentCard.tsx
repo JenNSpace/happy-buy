@@ -38,7 +38,8 @@ export function BodegaShipmentCard({
     setDelivering(true)
     const result = await markDelivered(
       shipment.shipmentId,
-      shipment.items.map((i) => ({ itemId: i.itemId, quantity: i.quantity }))
+      shipment.items.map((i) => ({ itemId: i.itemId, quantity: i.quantity })),
+      shipment.fulfillmentType
     )
     setDelivering(false)
     if (!result?.error) {
@@ -62,6 +63,12 @@ export function BodegaShipmentCard({
             <FulfillmentBadge type={shipment.fulfillmentType} />
             {shipment.printed && <span className="text-[10px] font-medium text-gray-400">🖨 Guía impresa</span>}
           </div>
+          {/* Never hide a shipment we couldn't classify — make the human check it. */}
+          {shipment.dispatchState === 'unknown' && (
+            <p className="mb-2 rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800">
+              Estado no reconocido — confirma en Mercado Libre antes de despacharlo.
+            </p>
+          )}
           <div className="space-y-1.5">
             {shipment.items.map((item, i) => (
               <ProductLine

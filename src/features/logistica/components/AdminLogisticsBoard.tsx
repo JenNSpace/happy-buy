@@ -10,6 +10,7 @@ import { ProductLine } from './ProductLine'
 import { getDispatchMessage } from '../utils/dispatch-cutoff'
 import { getCountdownInfo } from '../utils/countdown'
 import type { PendingShipment } from '../types'
+import type { FullSummary } from '../services/get-full-summary'
 import type { Warehouse } from '@/types/database'
 
 /** Most urgent first (overdue counts as "most urgent"); items with no deadline sort last. */
@@ -133,6 +134,13 @@ function ShipmentCard({
         <span className="text-[11px] text-gray-400">{shipment.buyerNickname}</span>
       </div>
 
+      {/* Never hide a shipment we couldn't classify — make the human check it. */}
+      {shipment.dispatchState === 'unknown' && (
+        <p className="mb-2 rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800">
+          Estado no reconocido — confirma en Mercado Libre antes de despacharlo.
+        </p>
+      )}
+
       <div className="mb-2 space-y-1.5">
         {shipment.items.map((item, i) => (
           <div key={i}>
@@ -236,10 +244,12 @@ export function AdminLogisticsBoard({
   shipments,
   warehouses,
   shortNames,
+  fullSummary,
 }: {
   shipments: PendingShipment[]
   warehouses: Warehouse[]
   shortNames: Record<string, string>
+  fullSummary: FullSummary | null
 }) {
   const groups = useMemo(() => {
     const unassigned = sortByUrgency(shipments.filter((s) => !s.warehouseId))
@@ -251,12 +261,17 @@ export function AdminLogisticsBoard({
   }, [shipments, warehouses])
 
   if (shipments.length === 0) {
-    return <p className="text-sm text-gray-500">No hay pedidos pendientes de entrega.</p>
+    return (
+      <div className="space-y-6">
+        <DispatchSummaryTiles shipments={shipments} fullSummary={fullSummary} />
+        <p className="text-sm text-gray-500">No hay pedidos pendientes de entrega.</p>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
-      <DispatchSummaryTiles shipments={shipments} />
+      <DispatchSummaryTiles shipments={shipments} fullSummary={fullSummary} />
 
       <SummaryCounts shipments={shipments} byWarehouse={groups.byWarehouse} />
 

@@ -5,16 +5,16 @@ import { updateGoal } from '../services/update-goal'
 
 export function GoalSettingsForm({
   currentTarget,
-  previousAmount,
+  previousProfit,
 }: {
   currentTarget: number | null
-  previousAmount: number
+  previousProfit: number
 }) {
   const [open, setOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  const suggestedTarget = previousAmount > 0 ? Math.round((previousAmount * 1.1) / 1000) * 1000 : null
+  const suggestedTarget = previousProfit > 0 ? Math.round((previousProfit * 1.1) / 1000) * 1000 : null
 
   async function handleSubmit(formData: FormData) {
     setLoading(true)

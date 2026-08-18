@@ -62,6 +62,7 @@ export function StockTable({
                         <span className={`text-base font-bold ${isStockOut ? 'text-red-500' : qty <= 0 ? 'text-gray-400' : 'text-gray-900'}`}>
                           {qty}
                         </span>
+                        <span className="ml-1 text-xs text-gray-400">disponibles</span>
                         <div className={`text-xs font-medium text-amber-700 ${onTheWay > 0 ? '' : 'invisible'}`}>
                           {onTheWay > 0 ? `${onTheWay} en camino` : '—'}
                         </div>
