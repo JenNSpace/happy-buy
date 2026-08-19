@@ -17,7 +17,7 @@ const TABS: Tab[] = [
   { label: 'Dashboard', href: '/dashboard', roles: ['admin'], enabled: true },
   { label: 'Logística', href: '/logistica', roles: ['admin', 'bodega'], enabled: true },
   { label: 'Compras', href: '/compras', roles: ['admin'], enabled: true },
-  { label: 'Finanzas', href: '/finanzas', roles: ['admin'], enabled: false },
+  { label: 'Finanzas', href: '/finanzas', roles: ['admin'], enabled: true },
   { label: 'Productos', href: '/productos', roles: ['admin'], enabled: false },
 ]
 
