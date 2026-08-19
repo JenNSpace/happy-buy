@@ -93,9 +93,33 @@ export interface StockByWarehouseRow {
 
 export type PurchaseStatus = 'pedido' | 'recibido'
 
+export type PaymentMethodKind = 'credito' | 'debito' | 'efectivo'
+
 export interface PaymentMethod {
   id: string
   name: string
+  kind: PaymentMethodKind | null
+  /** Cupo total. Null = no registrado; la UI oculta la barra en vez de inventarlo. */
+  credit_limit: number | null
+  /** Día del mes en que corta la tarjeta. */
+  statement_day: number | null
+  /** Día del mes en que vence el pago. */
+  due_day: number | null
+  created_at: string
+}
+
+export interface Expense {
+  id: string
+  category: string
+  description: string | null
+  amount: number
+  spent_on: string
+  payment_method_id: string | null
+  /** Bodega relacionada. Qué significa depende de `is_reimbursement`. */
+  warehouse_id: string | null
+  /** true = se le devolvió la plata a la bodega; false = se compró y se le envió. */
+  is_reimbursement: boolean
+  created_by: string | null
   created_at: string
 }
 
@@ -116,6 +140,46 @@ export interface Purchase {
   created_by: string | null
   created_at: string
   updated_at: string
+}
+
+export type MoneyReleaseStatus = 'pending' | 'released'
+
+/**
+ * Espejo local de un pago de Mercado Pago (`api.mercadopago.com/v1/payments`,
+ * mismo token que ML). Solo lo escribe el sync con service-role.
+ *
+ * `net_received_amount` es la plata que REALMENTE queda de la venta: ML ya le
+ * restó comisión, envío y retenciones. Verificado 2026-08-18 en 4 pedidos:
+ * `transaction_amount − Σ charges(from: collector) = net_received_amount`
+ * cuadra al centavo.
+ */
+export interface MlPayment {
+  id: number
+  /** Null en las bonificaciones Flex, que llegan como pagos sueltos. */
+  order_id: string | null
+  /**
+   * Quién COBRA. Si no es el ID de Happy Buy, el pago es una COMPRA que hizo
+   * Jen (la API devuelve ambas cosas mezcladas) y no debe contarse como venta.
+   */
+  collector_id: number | null
+  /** 'regular_payment' (una venta) | 'money_transfer' (bonificación Flex). */
+  operation_type: string
+  /** 'bonificaciones_flex_fc' identifica el bono de envío Flex. */
+  description: string | null
+  status: string
+  date_approved: string | null
+  /** Fecha real del depósito. El plazo NO es fijo — nunca hardcodearlo. */
+  money_release_date: string | null
+  money_release_status: MoneyReleaseStatus | null
+  transaction_amount: number
+  net_received_amount: number
+  meli_fee: number
+  shipping_charge: number
+  /** Retención en la fuente (1,5%) + ICA Bogotá (0,414%). No todos los pedidos las llevan. */
+  tax_withholding: number
+  /** Desglose crudo de `charges_details`, para no perder cargos que ML invente después. */
+  charges: unknown
+  synced_at: string
 }
 
 export interface Database {
@@ -170,6 +234,16 @@ export interface Database {
         Row: PaymentMethod
         Insert: Omit<PaymentMethod, 'id' | 'created_at'> & { id?: string; created_at?: string }
         Update: Partial<Omit<PaymentMethod, 'id'>>
+      }
+      ml_payments: {
+        Row: MlPayment
+        Insert: Omit<MlPayment, 'synced_at'> & { synced_at?: string }
+        Update: Partial<Omit<MlPayment, 'id'>>
+      }
+      expenses: {
+        Row: Expense
+        Insert: Omit<Expense, 'id' | 'created_at'> & { id?: string; created_at?: string }
+        Update: Partial<Omit<Expense, 'id'>>
       }
     }
   }
