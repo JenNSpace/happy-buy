@@ -22,6 +22,8 @@ export async function addAdjustment(input: {
   packagesDelta: number
   amountDelta: number
   note: string
+  /** Quincena a la que aplica. Por defecto la abierta. */
+  periodStart?: string
 }) {
   const supabase = await createClient()
   const {
@@ -34,7 +36,7 @@ export async function addAdjustment(input: {
 
   const { error } = await supabase.from('warehouse_adjustments').insert({
     warehouse_id: input.warehouseId,
-    period_start: getBogotaFortnightStart().slice(0, 10),
+    period_start: input.periodStart ?? getBogotaFortnightStart().slice(0, 10),
     packages_delta: input.packagesDelta,
     amount_delta: input.amountDelta,
     note: input.note.trim(),
@@ -66,6 +68,8 @@ export async function markFortnightPaid(input: {
   packages: number
   amount: number
   note?: string
+  /** Quincena que se paga. Por defecto la abierta; se pasa explícita al saldar una atrasada. */
+  periodStart?: string
 }) {
   const supabase = await createClient()
   const {
@@ -73,7 +77,7 @@ export async function markFortnightPaid(input: {
   } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado' }
 
-  const periodStart = getBogotaFortnightStart().slice(0, 10)
+  const periodStart = input.periodStart ?? getBogotaFortnightStart().slice(0, 10)
 
   const { error } = await supabase.from('warehouse_payments').insert({
     warehouse_id: input.warehouseId,
@@ -94,13 +98,13 @@ export async function markFortnightPaid(input: {
   return { success: true }
 }
 
-export async function undoFortnightPaid(warehouseId: string) {
+export async function undoFortnightPaid(warehouseId: string, periodStart?: string) {
   const supabase = await createClient()
   const { error } = await supabase
     .from('warehouse_payments')
     .delete()
     .eq('warehouse_id', warehouseId)
-    .eq('period_start', getBogotaFortnightStart().slice(0, 10))
+    .eq('period_start', periodStart ?? getBogotaFortnightStart().slice(0, 10))
 
   if (error) return { error: error.message }
 

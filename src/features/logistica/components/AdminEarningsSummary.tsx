@@ -7,7 +7,15 @@ import { getFortnightLabel } from '../utils/dispatch-cutoff'
 import { addAdjustment, removeAdjustment, markFortnightPaid, undoFortnightPaid } from '../services/payment-actions'
 import type { WarehouseEarnings } from '../services/get-warehouse-earnings'
 
-function AdjustmentForm({ warehouseId, onDone }: { warehouseId: string; onDone: () => void }) {
+function AdjustmentForm({
+  warehouseId,
+  periodStart,
+  onDone,
+}: {
+  warehouseId: string
+  periodStart: string
+  onDone: () => void
+}) {
   const router = useRouter()
   const [packages, setPackages] = useState('')
   const [amount, setAmount] = useState('')
@@ -22,6 +30,7 @@ function AdjustmentForm({ warehouseId, onDone }: { warehouseId: string; onDone: 
 
     const result = await addAdjustment({
       warehouseId,
+      periodStart,
       packagesDelta: Number(packages || 0),
       amountDelta: Number(amount || 0),
       note,
@@ -99,6 +108,7 @@ function WarehouseCard({ earnings }: { earnings: WarehouseEarnings }) {
     setBusy(true)
     await markFortnightPaid({
       warehouseId: earnings.warehouseId,
+      periodStart: earnings.periodStart,
       packages: earnings.totalPackages,
       amount: earnings.totalAmount,
     })
@@ -108,7 +118,7 @@ function WarehouseCard({ earnings }: { earnings: WarehouseEarnings }) {
 
   async function handleUndo() {
     setBusy(true)
-    await undoFortnightPaid(earnings.warehouseId)
+    await undoFortnightPaid(earnings.warehouseId, earnings.periodStart)
     setBusy(false)
     router.refresh()
   }
@@ -121,15 +131,33 @@ function WarehouseCard({ earnings }: { earnings: WarehouseEarnings }) {
   }
 
   return (
-    <div className={`rounded-xl border-2 p-4 ${isPaid ? 'border-gray-200 bg-gray-50' : 'border-gray-200 bg-white'}`}>
+    <div
+      className={`rounded-xl border-2 p-4 ${
+        isPaid
+          ? 'border-gray-200 bg-gray-50'
+          : earnings.isPastDue
+            ? 'border-amber-300 bg-amber-50'
+            : 'border-gray-200 bg-white'
+      }`}
+    >
       <div className="flex items-baseline justify-between gap-2">
         <h4 className="text-sm font-bold text-gray-900">{earnings.warehouseName}</h4>
-        {isPaid && (
+        {isPaid ? (
           <span className="rounded-full bg-happy-lime/40 px-2 py-0.5 text-[11px] font-medium text-happy-greenDark">
             Pagada
           </span>
+        ) : (
+          earnings.isPastDue && (
+            <span className="rounded-full bg-amber-200 px-2 py-0.5 text-[11px] font-medium text-amber-900">
+              Sin pagar
+            </span>
+          )
         )}
       </div>
+
+      {/* La quincena que cerró sin pagarse antes no aparecía en ninguna pantalla:
+          se pagaba lo que se veía y quedaba un saldo invisible. */}
+      <p className="mt-0.5 text-[11px] text-gray-500">{earnings.periodLabel}</p>
 
       <p className={`mt-2 text-2xl font-bold tabular-nums ${isPaid ? 'text-gray-400' : 'text-happy-greenDark'}`}>
         {formatCOP(earnings.totalAmount)}
@@ -192,7 +220,13 @@ function WarehouseCard({ earnings }: { earnings: WarehouseEarnings }) {
         </button>
       )}
 
-      {adding && <AdjustmentForm warehouseId={earnings.warehouseId} onDone={() => setAdding(false)} />}
+      {adding && (
+        <AdjustmentForm
+          warehouseId={earnings.warehouseId}
+          periodStart={earnings.periodStart}
+          onDone={() => setAdding(false)}
+        />
+      )}
     </div>
   )
 }
@@ -206,14 +240,24 @@ function WarehouseCard({ earnings }: { earnings: WarehouseEarnings }) {
 export function AdminEarningsSummary({ earnings }: { earnings: WarehouseEarnings[] }) {
   if (earnings.length === 0) return null
 
+  const pendientes = earnings.filter((e) => e.isPastDue && !e.paidAt)
+
   return (
     <div>
       <p className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-400">
         Pago de la quincena · {getFortnightLabel()}
       </p>
+
+      {pendientes.length > 0 && (
+        <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-gray-700">
+          Hay {pendientes.length === 1 ? 'una quincena anterior' : `${pendientes.length} quincenas anteriores`} sin
+          pagar. {pendientes.length === 1 ? 'Aparece' : 'Aparecen'} abajo junto con la actual.
+        </p>
+      )}
+
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {earnings.map((e) => (
-          <WarehouseCard key={e.warehouseId} earnings={e} />
+          <WarehouseCard key={`${e.warehouseId}-${e.periodStart}`} earnings={e} />
         ))}
       </div>
     </div>
