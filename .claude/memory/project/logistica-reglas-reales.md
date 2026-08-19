@@ -64,6 +64,26 @@ eso es `substatus` `dropped_off` o `picked_up`.
 **Lección:** cuando un filtro define el conjunto que se sincroniza, preguntarse qué pasa con
 los registros que **salen** de ese filtro. Acá el estado de destino era justo el que lo excluía.
 
+## El cuaderno de la bodega puede tener OMISIONES (2026-08-19)
+
+Gina cobró 21 envíos y el sistema mostraba 23. Jen dio la instrucción de que los 21 eran la
+verdad y de "buscar que sea así". Se verificó de tres formas —que no fueran los pendientes, que
+no fueran dos ventas en un mismo paquete (se agrupó por `pack_id`), y que el tipo de cada envío
+coincidiera con ML en los 64 de agosto— y los 23 resultaron reales.
+
+**Al darle a Jen los datos completos de los dos envíos (producto, comprador, ciudad, hora de
+despacho), confirmó con su mamá: los había olvidado anotar.** Un Pack X3 y una Multitoma.
+
+**Cómo se resolvió:** no discutiendo el total, sino entregando los datos con los que la persona
+podía reconocer el envío. El número de venta (el `pack_id`, ver [[ml-numero-de-venta-visible]]),
+el producto, el comprador y la **hora exacta de despacho** fueron lo que permitió identificarlos.
+
+**Lección:** el cuaderno de la bodega es excelente para auditar el sistema —encontró tres bugs
+reales el 2026-08-18— pero no es infalible. Cuando los dos discrepan, la salida no es elegir a
+quién creerle sino **bajar al envío individual** y dejar que la persona lo reconozca. Ojo con
+los envíos que salen **fuera del lote**: los dos olvidados salieron uno junto a otro despacho y
+otro una hora después del grupo.
+
 ## Pendiente: inventario sin descontar
 
 Hay envíos asignados que **nunca generaron movimiento de inventario**, así que el stock está
