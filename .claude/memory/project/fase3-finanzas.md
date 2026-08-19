@@ -1,16 +1,20 @@
 # Fase 3 — Finanzas
 
-**Estado al 2026-08-18: LAS 5 FASES CONSTRUIDAS y probadas en local. NADA está commiteado ni
-desplegado — el working tree tiene todo el trabajo.**
+**Estado al 2026-08-19: LAS 5 FASES CONSTRUIDAS, COMMITEADAS Y DESPLEGADAS a producción.**
+Verificado por Jen en producción. 7 commits, uno por fase.
 
 Lo que funciona: tabla `ml_payments` con 1.441 pagos · motor de costos leyendo el neto real de
 ML · tab `/finanzas` con hero de caja, flujo de liberaciones, P&L de 4 meses, tarjetas con cupo
 y registro de gastos. Tablas nuevas: `ml_payments`, `expenses`; `payment_methods` extendida con
 `kind`/`credit_limit`/`statement_day`/`due_day`.
 
-**Pendiente antes de desplegar:** verificación visual de Jen (el P&L y las tarjetas nunca se
-vieron renderizados por el agente — no hay credenciales), commit por fase, y el pase de
-`design-critic` que ella quería hacer al final sobre todo el dashboard.
+**Pendiente:** el pase de `design-critic` sobre todo el dashboard, que Jen quería hacer al final
+con todo construido.
+
+**Verificación externa que sí ocurrió:** Jen confirmó contra su propia pantalla de ML que la
+venta del 18-ago de $56.000 deposita $48.488,16 el 8 de septiembre. Además mandó dos capturas
+más que resultaron decisivas — tres ventas idénticas de $56.000 el mismo día con netos de
+$49.560, $48.488,16 y $41.460. Es [[ley-datos-por-pedido]] demostrada en vivo.
 
 **Pedido explícito de Jen (2026-08-18): OPTIMIZAR PARA CELULAR al final**, junto con el pase de
 `design-critic`, cuando ya esté todo construido. No es un "estaría bueno" — lo pidió aparte y

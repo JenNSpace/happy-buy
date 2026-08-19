@@ -11,6 +11,8 @@
 
 ## project/ — Proyectos y decisiones activas
 
+- [**Pendientes al 2026-08-19**](project/pendientes.md) — **leer primero**: qué está listo para pagar, qué quedó sin resolver, y cómo se encontraron los bugs de la sesión
+
 - [Fase 2 — Compras + Inventario](project/fase2-compras-inventario.md) — construida, probada y **desplegada a producción el 2026-08-18**
 - [Fase 3 — Finanzas](project/fase3-finanzas.md) — **planeada y aprobada el 2026-08-18, sin construir**. Blueprint de 5 fases en la raíz. Destapó que las retenciones reales son 1,914%, no 1,5%
 - [Operación: bodegas, tarifas y pagos](project/operacion-bodegas-y-pagos.md) — quién es quién, cuánto cuesta cada canal, pagos por quincena con ajustes manuales, y por qué no se le baja el pago a las bodegas
