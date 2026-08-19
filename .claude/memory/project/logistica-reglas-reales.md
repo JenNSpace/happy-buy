@@ -39,6 +39,31 @@ Gina → Daniel. Tras eso Daniel cuadró **exacto** con su cuenta ($120.000 en l
 **La pista que lo resolvió fue el monto, no la fecha:** a Daniel le faltaban exactamente 6
 envíos y a Gina le sobraban exactamente 6 de agencia.
 
+## El bug que hacía desaparecer envíos entregados (arreglado 2026-08-18)
+
+**Síntoma:** Gina contaba 21 envíos, la pantalla mostraba 18. Cinco paquetes que ML reportaba
+como `delivered`, con fecha de despacho, no estaban en el sistema — ni pagados ni descontados
+de inventario.
+
+**Causa: una carrera entre dos consultas.** `getPendingShipmentsForAdmin` busca órdenes con
+`tags: not_delivered` y es quien llama a `syncAutoDelivered` para rellenar `delivered_at`. En
+cuanto ML marca el envío como entregado, **la orden pierde ese tag** y sale de la búsqueda. Si
+nadie abrió la pantalla en la ventana entre "pendiente" y "entregado", el envío se perdía para
+siempre. `syncDispatchedShipments` debía cubrirlo (recorre todas las órdenes) pero solo miraba
+envíos **sin fila local**; estos tenían fila con bodega asignada y `delivered_at` null, así que
+caían justo entre las dos.
+
+**Fix:** `syncDispatchedShipments` ahora también cierra los que ya existen sin fecha de
+despacho, delegando en `syncAutoDelivered` para que el inventario se descuente igual que en el
+flujo normal.
+
+**Criterio confirmado por Jen:** el pago cuenta **cuando la bodega ENTREGA** el paquete —al
+courier de Flex o en la agencia—, no cuando ML lo confirma ni cuando la bodega lo empaca. En ML
+eso es `substatus` `dropped_off` o `picked_up`.
+
+**Lección:** cuando un filtro define el conjunto que se sincroniza, preguntarse qué pasa con
+los registros que **salen** de ese filtro. Acá el estado de destino era justo el que lo excluía.
+
 ## Pendiente: inventario sin descontar
 
 Hay envíos asignados que **nunca generaron movimiento de inventario**, así que el stock está

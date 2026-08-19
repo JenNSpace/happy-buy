@@ -14,6 +14,7 @@
 - [Fase 2 — Compras + Inventario](project/fase2-compras-inventario.md) — construida, probada y **desplegada a producción el 2026-08-18**
 - [Fase 3 — Finanzas](project/fase3-finanzas.md) — **planeada y aprobada el 2026-08-18, sin construir**. Blueprint de 5 fases en la raíz. Destapó que las retenciones reales son 1,914%, no 1,5%
 - [Operación: bodegas, tarifas y pagos](project/operacion-bodegas-y-pagos.md) — quién es quién, cuánto cuesta cada canal, pagos por quincena con ajustes manuales, y por qué no se le baja el pago a las bodegas
+- [Logística: reglas reales](project/logistica-reglas-reales.md) — corte de Flex a la 1 pm, el desfase de un día entre cuaderno y ML, cómo detectar el canal real, y el bug que hacía desaparecer envíos ya entregados
 
 ## feedback/ — Correcciones y preferencias
 
