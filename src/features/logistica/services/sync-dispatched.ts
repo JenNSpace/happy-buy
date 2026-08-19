@@ -3,6 +3,7 @@ import { mlGet } from '@/features/dashboard/services/ml-client'
 import { ML_USER_ID } from '@/features/dashboard/constants'
 import { createClient } from '@/lib/supabase/server'
 import { getFulfillmentType, needsDispatch, type MlShipmentCore } from './parse-shipment'
+import { syncAutoDelivered } from './sync-delivered'
 import { getBogotaFortnightStart } from '../utils/dispatch-cutoff'
 
 interface MlOrder {
@@ -10,6 +11,8 @@ interface MlOrder {
   date_created: string
   status: string
   shipping?: { id: number } | null
+  /** Necesarios para descontar inventario al cerrar un envío ya despachado. */
+  order_items?: { item: { id: string }; quantity: number }[]
 }
 
 interface MlOrdersSearchResponse {
@@ -85,12 +88,24 @@ export async function syncDispatchedShipments(): Promise<OrphanShipment[]> {
 
   const supabase = await createClient()
   const [{ data: known }, { data: fullWarehouse }] = await Promise.all([
-    supabase.from('shipments').select('id'),
+    supabase.from('shipments').select('id, warehouse_id, delivered_at'),
     supabase.from('warehouses').select('id').eq('is_fulfillment', true).maybeSingle(),
   ])
-  const knownIds = new Set((known ?? []).map((s) => s.id))
+  const localById = new Map(
+    (known ?? []).map((s) => [s.id as number, s as { id: number; warehouse_id: string | null; delivered_at: string | null }])
+  )
 
-  const unknown = paidWithShipping.filter((o) => !knownIds.has(o.shipping!.id))
+  // Envíos que YA tenemos pero sin fecha de despacho. Cierran un hueco real
+  // encontrado el 2026-08-18: `getPendingShipmentsForAdmin` busca con
+  // `tags: not_delivered`, y en cuanto ML marca el envío como entregado la
+  // orden pierde ese tag y desaparece de la búsqueda — así que el sync que
+  // rellena `delivered_at` nunca la ve. Si nadie abrió la pantalla entre
+  // "pendiente" y "entregado", el envío se perdía: no contaba para el pago de
+  // la bodega ni descontaba inventario. Cinco paquetes de Gina del 18-ago
+  // estaban exactamente así.
+  await closeDeliveredGaps(paidWithShipping, localById)
+
+  const unknown = paidWithShipping.filter((o) => !localById.has(o.shipping!.id))
   if (unknown.length === 0) return []
 
   const details = await Promise.all(
@@ -134,6 +149,45 @@ export async function syncDispatchedShipments(): Promise<OrphanShipment[]> {
   }
 
   return orphans
+}
+
+/**
+ * Rellena `delivered_at` en envíos que ya existen localmente pero que ML ya dio
+ * por despachados, y descuenta su inventario.
+ *
+ * Es la red de seguridad del flujo normal: `syncAutoDelivered` solo se ejecuta
+ * sobre lo que devuelve la búsqueda `not_delivered`, y un envío entregado ya no
+ * está ahí. Sin esto, el trabajo de la bodega desaparece de su quincena.
+ */
+async function closeDeliveredGaps(
+  orders: MlOrder[],
+  localById: Map<number, { id: number; warehouse_id: string | null; delivered_at: string | null }>
+): Promise<void> {
+  const sinFecha = orders.filter((o) => {
+    const local = localById.get(o.shipping!.id)
+    return local && local.delivered_at === null
+  })
+  if (sinFecha.length === 0) return
+
+  const details = await Promise.all(
+    sinFecha.map((o) => mlGet<MlShipmentDetails>(`/shipments/${o.shipping!.id}`).catch(() => null))
+  )
+
+  await Promise.all(
+    sinFecha.map(async (order, i) => {
+      const shipment = details[i]
+      // Sigue siendo nuestro: se rellena cuando de verdad salga.
+      if (!shipment || needsDispatch(shipment)) return
+
+      await syncAutoDelivered(
+        shipment.id,
+        order.id,
+        shipment,
+        localById.get(order.shipping!.id)?.warehouse_id ?? null,
+        (order.order_items ?? []).map((item) => ({ itemId: item.item.id, quantity: item.quantity }))
+      )
+    })
+  )
 }
 
 /**
