@@ -14,6 +14,7 @@ import { SalesHistorySection } from '@/features/dashboard/components/SalesHistor
 import { ProductAdsPerformanceSection } from '@/features/dashboard/components/ProductAdsPerformanceSection'
 import { CardSkeleton } from '@/features/dashboard/components/CardSkeleton'
 import { GoalSection } from '@/features/goals/components/GoalSection'
+import { CostModelChangeBanner } from '@/features/finanzas/components/CostModelChangeBanner'
 import type { AdsSummary } from '@/features/dashboard/types'
 
 // Personalized, auth-gated financial data — never statically cache this route.
@@ -57,6 +58,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="mx-auto max-w-5xl p-8">
+      <div className="mb-6">
+        <CostModelChangeBanner />
+      </div>
+
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <FinancialSummaryCard summary={summary} ads={ads} />
 

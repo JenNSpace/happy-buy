@@ -16,8 +16,20 @@ export interface PeriodMetrics {
   /** How many packages went out each way — the two channels cost very different amounts. */
   flexOrderCount: number
   agenciaOrderCount: number
-  /** Estimated Colombian withholding (retención en la fuente) — see TAX_WITHHOLDING_RATE. */
+  /**
+   * REAL withholdings ML applied (retención en la fuente + ICA + IVA, whichever
+   * apply), read per payment. Only estimated for orders whose payment hasn't
+   * synced yet — see `provisionalOrderCount`.
+   */
   taxWithholding: number
+  /**
+   * Charges ML lists on a payment but doesn't deduct from it (it bills them
+   * monthly instead). Almost always 0; exists so the breakdown adds up to the
+   * real net instead of looking like a maths error.
+   */
+  otherMlCharges: number
+  /** Orders still without their ML payment synced — computed the old way, not exact. */
+  provisionalOrderCount: number
   netProfit: number
   marginRate: number
 }

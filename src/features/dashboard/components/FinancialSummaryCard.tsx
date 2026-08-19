@@ -54,9 +54,16 @@ export function FinancialSummaryCard({ summary, ads }: { summary: FinancialSumma
 
   // Grouped by who ends up with the money — the three groups plus ads sum to
   // exactly (ventas brutas − ganancia real), so the card reads as one waterfall.
-  const mlTotal = summary.mlCommission + summary.shippingCost - summary.shippingBonus
+  const mlTotal =
+    summary.mlCommission + summary.shippingCost - summary.shippingBonus + summary.otherMlCharges
   const operacionTotal = summary.productCost + summary.bodegaFee + summary.flexCourierFee
   const otrosTotal = summary.taxWithholding + adsCost
+
+  // Every figure comes from the payment ML issued, unless an order is so recent
+  // its payment hasn't appeared yet. Saying which is which is the whole point:
+  // an estimate presented as exact is what this rewrite came to fix.
+  const hasProvisional = summary.provisionalOrderCount > 0
+  const retencionesHint = hasProvisional ? '· real, salvo pedidos de hoy' : '· real, por venta'
 
   if (summary.orderCount === 0) {
     return (
@@ -122,6 +129,17 @@ export function FinancialSummaryCard({ summary, ads }: { summary: FinancialSumma
               credit
             />
           )}
+          {/* ML sometimes lists a charge it doesn't take from the payment (it
+              bills it monthly). Showing it keeps the column adding up instead
+              of leaving an unexplained gap. */}
+          {Math.abs(summary.otherMlCharges) >= 1 && (
+            <Line
+              label="Otros cargos de ML"
+              hint="· facturados aparte"
+              value={Math.abs(summary.otherMlCharges)}
+              credit={summary.otherMlCharges < 0}
+            />
+          )}
         </Group>
 
         <Group title="Tu operación" total={operacionTotal}>
@@ -137,10 +155,18 @@ export function FinancialSummaryCard({ summary, ads }: { summary: FinancialSumma
         </Group>
 
         <Group title="Impuestos y publicidad" total={otrosTotal}>
-          <Line label="Retenciones" hint="· estimado 1,5%" value={summary.taxWithholding} />
+          <Line label="Retenciones" hint={retencionesHint} value={summary.taxWithholding} />
           <Line label="Publicidad · Mercado Ads" value={adsCost} />
         </Group>
       </div>
+
+      {hasProvisional && (
+        <p className="mt-4 text-xs text-gray-400">
+          {summary.provisionalOrderCount === 1
+            ? '1 pedido es muy reciente y Mercado Libre todavía no emitió su pago: esa parte va estimada.'
+            : `${summary.provisionalOrderCount} pedidos son muy recientes y Mercado Libre todavía no emitió su pago: esa parte va estimada.`}
+        </p>
+      )}
     </div>
   )
 }

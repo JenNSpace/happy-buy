@@ -37,12 +37,19 @@ export const FULFILLMENT_FEE_AGENCIA_COP = 5000
 export const FLEX_COURIER_FEE_COP = 7500
 
 /**
- * Retención en la fuente withheld on payouts. Not exposed by any ML API
- * (verified 2026-08-18: the order API reports taxes_amount 0 and the billing
- * ledger only carries CV/CXD/PADS charges) — these are Mercado Pago
- * withholdings, so this rate is an estimate. It matched two real invoices to
- * the peso ($1,950 on $129,996 and $975 on $64,998) but not a third
- * ($706 on $49,714 = 1.42%), so always label it as estimated in the UI.
+ * @deprecated Real withholdings now come per payment from `ml_payments`
+ * (`getRealNet`). This rate survives ONLY as a fallback for an order whose
+ * payment hasn't synced yet, and the UI must label those as provisional.
+ *
+ * Why it was wrong, and not in the direction we assumed: it charged 1,5% to
+ * EVERY sale. Measured over 1.209 real sales on 2026-08-18, **478 of them (40%)
+ * pay no withholding at all**, while others pay several at once — retención en
+ * la fuente (1,5%), ICA Bogotá (0,414%), ICA Medellín, IVA, inscription IVA.
+ * The estimate billed $1.464.097 over the year where the real figure was
+ * $1.063.362, so it was UNDERSTATING profit by ~$400.735.
+ *
+ * The lesson is in .claude/PRPs/PIEZA-finanzas.md: one order shows a formula is
+ * wrong; only the distribution says which way and by how much.
  */
 export const TAX_WITHHOLDING_RATE = 0.015
 
