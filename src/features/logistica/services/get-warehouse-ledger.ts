@@ -54,22 +54,47 @@ export interface WarehouseLedger {
 }
 
 /**
- * Desde cuándo cuenta la cuenta corriente.
+ * Desde cuándo la cuenta del sistema es la fuente. Vive en
+ * `warehouses.ledger_start` porque **no es la misma fecha para las dos bodegas**.
  *
- * Los pagos a las bodegas solo empezaron a registrarse en el sistema en agosto
- * de 2026. Sumar los envíos desde el principio de los tiempos contra unos pagos
- * que arrancan en agosto deja la cuenta desbalanceada por construcción: los
- * despachos anteriores ya se liquidaron por fuera, así que contarlos otra vez
- * es cobrarlos dos veces. Aparecio de verdad — un envio de octubre de 2025
- * asignado a Galerias estaba inflando su saldo en $5.000 (2026-08-20).
+ * Gina hace Flex, y solo ella hace Flex: un envío Flex es suyo con certeza
+ * aunque se haya asignado después, así que todo agosto sirve. Daniel hace
+ * agencia, y Gina también hace agencia de vez en cuando: los 18 envíos de
+ * agencia que se le cargaron por SQL el 18-ago son una suposición, y esa
+ * deducción ya falló con seis envíos. Su período anterior se salda con la
+ * cuenta de cobro que él pasó, registrada como ajuste de apertura.
+ *
+ * La usuaria lo zanjó el 2026-08-20: *"no quiero que especules... di que no
+ * sabes a qué paquetes corresponde y ya de ahí en adelante sí que sea lo real"*
+ * y *"daniel y gina son diferentes, tenemos todo agosto de gina"*.
  */
-const LEDGER_START = '2026-08-01T00:00:00-05:00'
+
+/**
+ * Solo cuenta lo que quedó REGISTRADO al despachar.
+ *
+ * Antes de que la app llevara la cuenta, la bodega de cada envío se dedujo por
+ * el canal ("si es agencia es de Daniel, si es Flex es de Gina") y se cargó por
+ * SQL el 2026-08-18. Eso no es saber quién despachó: es una suposición, y la
+ * regla ya había fallado con seis envíos. Contarlos como paquetes cobrables es
+ * inventar plata.
+ *
+ * La usuaria lo zanjó el 2026-08-20: *"no quiero que especules... di que no
+ * sabes a qué paquetes corresponde y ya de ahí en adelante sí que sea lo real"*.
+ * El período anterior se salda con la cuenta de cobro de la propia bodega,
+ * registrada como un ajuste de apertura.
+ *
+ * Se distingue por los datos, no por una fecha elegida a dedo: una fila creada
+ * mucho después del despacho no la escribió nadie viendo salir el paquete
+ * (ver `wasRecordedOnDispatch`).
+ */
+
 
 interface WarehouseRow {
   id: string
   name: string
   fee_per_package_flex: number
   fee_per_package_agencia: number
+  ledger_start: string
 }
 
 /**
@@ -99,23 +124,46 @@ export async function getGeneratedInRange(
       .single<{ fee_per_package_flex: number; fee_per_package_agencia: number }>(),
     supabase
       .from('shipments')
-      .select('fulfillment_type, delivered_at')
+      .select('fulfillment_type, delivered_at, created_at')
       .eq('warehouse_id', warehouseId)
       .not('delivered_at', 'is', null)
       .gte('delivered_at', `${from}T00:00:00-05:00`)
       // El "to" es inclusivo para quien lee: "del 1 al 18" incluye el 18 entero.
       .lt('delivered_at', `${nextDay(to)}T00:00:00-05:00`)
-      .returns<{ fulfillment_type: string | null; delivered_at: string }[]>(),
+      .returns<{ fulfillment_type: string | null; delivered_at: string; created_at: string }[]>(),
   ])
 
   if (!warehouse) return { packages: 0, amount: 0 }
 
   const fees = { feeFlex: warehouse.fee_per_package_flex, feeAgencia: warehouse.fee_per_package_agencia }
-  const rows = shipments ?? []
+  const rows = (shipments ?? []).filter(isAttributionCertain)
   return {
     packages: rows.length,
     amount: rows.reduce((sum, s) => sum + feeFor(s.fulfillment_type, fees), 0),
   }
+}
+
+/** Dos horas de tolerancia entre el despacho y la fila: más que eso es una corrección posterior. */
+export function wasRecordedOnDispatch(s: { created_at: string; delivered_at: string }): boolean {
+  return new Date(s.created_at).getTime() <= new Date(s.delivered_at).getTime() + 2 * 60 * 60 * 1000
+}
+
+/**
+ * ¿Sabemos de verdad qué bodega despachó esto?
+ *
+ * Sí en dos casos: quedó registrado al despachar, **o** es Flex — solo Gina hace
+ * Flex, regla firme del negocio, así que ahí no hay ambigüedad ni cuando la fila
+ * se creó después.
+ *
+ * No cuando es agencia asignada después: ese caso pudo ser de cualquiera de las
+ * dos, y ya se equivocó una vez con seis envíos.
+ */
+export function isAttributionCertain(s: {
+  created_at: string
+  delivered_at: string
+  fulfillment_type: string | null
+}): boolean {
+  return s.fulfillment_type === 'flex' || wasRecordedOnDispatch(s)
 }
 
 /** El día siguiente a una fecha YYYY-MM-DD, para poder tratar el rango como inclusivo. */
@@ -132,22 +180,22 @@ async function buildLedger(
   const [{ data: shipments }, { data: adjustments }, { data: payments }] = await Promise.all([
     supabase
       .from('shipments')
-      .select('fulfillment_type')
+      .select('fulfillment_type, delivered_at, created_at')
       .eq('warehouse_id', w.id)
       .not('delivered_at', 'is', null)
-      .gte('delivered_at', LEDGER_START)
-      .returns<{ fulfillment_type: string | null }[]>(),
+      .gte('delivered_at', `${w.ledger_start}T00:00:00-05:00`)
+      .returns<{ fulfillment_type: string | null; delivered_at: string; created_at: string }[]>(),
     supabase
       .from('warehouse_adjustments')
       .select('id, amount_delta, note, period_start')
       .eq('warehouse_id', w.id)
-      .gte('period_start', LEDGER_START.slice(0, 10))
+      .gte('period_start', w.ledger_start)
       .returns<{ id: string; amount_delta: number; note: string; period_start: string }[]>(),
     supabase
       .from('warehouse_payments')
       .select('id, amount, packages, period_start, period_end, note, paid_at')
       .eq('warehouse_id', w.id)
-      .gte('paid_at', LEDGER_START)
+      .gte('paid_at', `${w.ledger_start}T00:00:00-05:00`)
       .order('paid_at', { ascending: false })
       .returns<
         {
@@ -163,7 +211,8 @@ async function buildLedger(
   ])
 
   const fees = { feeFlex: w.fee_per_package_flex, feeAgencia: w.fee_per_package_agencia }
-  const rows = shipments ?? []
+  // Solo lo que sabemos de verdad de quién fue — ver `isAttributionCertain`.
+  const rows = (shipments ?? []).filter(isAttributionCertain)
   const amountFromPackages = rows.reduce((sum, s) => sum + feeFor(s.fulfillment_type, fees), 0)
   const amountFromAdjustments = (adjustments ?? []).reduce((sum, a) => sum + Number(a.amount_delta), 0)
   const totalGenerated = amountFromPackages + amountFromAdjustments
@@ -206,7 +255,7 @@ export async function getAllWarehouseLedgers(): Promise<WarehouseLedger[]> {
   const supabase = await createClient()
   const { data: warehouses } = await supabase
     .from('warehouses')
-    .select('id, name, fee_per_package_flex, fee_per_package_agencia')
+    .select('id, name, fee_per_package_flex, fee_per_package_agencia, ledger_start')
     .eq('is_fulfillment', false)
     .order('name')
     .returns<WarehouseRow[]>()
@@ -242,7 +291,7 @@ export async function getMyWarehouseLedger(): Promise<WarehouseLedger | null> {
 
   const { data: warehouse } = await supabase
     .from('warehouses')
-    .select('id, name, fee_per_package_flex, fee_per_package_agencia')
+    .select('id, name, fee_per_package_flex, fee_per_package_agencia, ledger_start')
     .eq('id', profile.warehouse_id)
     .single<WarehouseRow>()
 

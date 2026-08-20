@@ -277,24 +277,27 @@ function StatementPanel({ ledger, onClose }: { ledger: WarehouseLedger; onClose:
             {fecha(`${statement.to}T12:00:00-05:00`)}
           </p>
 
-          {/* Nunca presentar una inferencia como si fuera un registro. Los
-              envíos anteriores a que la app llevara la cuenta se asignaron
-              después, deduciendo la bodega por el canal — y esa regla ya falló
-              una vez. Quien manda esta cuenta tiene que saberlo. */}
-          {statement.inferredCount > 0 && (
+          {/* No especular. Los envíos anteriores a que la app llevara la cuenta
+              no se listan ni se cobran: solo se dice cuántos hay y que no se
+              sabe de quién fueron. Ese período se salda con la cuenta de cobro
+              de la propia bodega. */}
+          {statement.sinRegistro > 0 && (
             <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 p-2 text-[11px] leading-snug text-amber-900">
               <span className="font-semibold">
-                {statement.inferredCount} de {statement.lines.length} línea
-                {statement.lines.length === 1 ? '' : 's'} no son un registro, son una deducción.
+                Hay {statement.sinRegistro} envío{statement.sinRegistro === 1 ? '' : 's'} en este rango que no
+                está{statement.sinRegistro === 1 ? '' : 'n'} en la cuenta.
               </span>{' '}
-              Van marcadas con <span className="font-semibold">≈</span>: se asignaron a esta bodega después
-              del despacho, a partir del canal de envío, porque la app todavía no llevaba la cuenta.
-              Confírmalas contra la cuenta de cobro de la bodega antes de usarlas para pagar.
+              Son de antes de que la app registrara quién despachaba: existen, pero{' '}
+              <span className="font-semibold">no hay forma de saber si fueron de esta bodega</span>. Ese
+              período se salda con la cuenta de cobro que ella misma pasó — regístrala abajo como ajuste,
+              con el total que cobró.
             </div>
           )}
 
           {statement.lines.length === 0 ? (
-            <p className="text-xs text-gray-400">No hay envíos despachados en ese rango.</p>
+            <p className="text-xs text-gray-400">
+              No hay envíos registrados de esta bodega en ese rango.
+            </p>
           ) : (
             <table className="w-full text-left text-[11px]">
               <thead className="text-gray-400">
@@ -312,17 +315,7 @@ function StatementPanel({ ledger, onClose }: { ledger: WarehouseLedger; onClose:
               <tbody className="text-gray-600">
                 {statement.lines.map((l) => (
                   <tr key={l.shipmentId} className="border-t border-gray-100">
-                    <td className="py-1 pr-2 font-medium text-gray-900">
-                      {l.attribution === 'atribuido' && (
-                        <span
-                          className="mr-1 font-bold text-amber-600"
-                          title="Deducido por el canal de envío, no registrado al despachar"
-                        >
-                          ≈
-                        </span>
-                      )}
-                      {l.product}
-                    </td>
+                    <td className="py-1 pr-2 font-medium text-gray-900">{l.product}</td>
                     <td className="py-1 pr-2 whitespace-nowrap">{fechaHora(l.dispatchedAt)}</td>
                     {muestraCanal && <td className="py-1 pr-2 capitalize">{l.channel}</td>}
                     <td className="py-1 pr-2 whitespace-nowrap font-mono text-gray-400">#{l.saleNumber}</td>

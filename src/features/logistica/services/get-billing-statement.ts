@@ -1,7 +1,7 @@
 import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import { mlGet } from '@/features/dashboard/services/ml-client'
-import { feeFor } from './get-warehouse-ledger'
+import { feeFor, isAttributionCertain } from './get-warehouse-ledger'
 import { getPackingMap } from '@/features/inventario/services/get-product-catalog'
 import { getPackingLine, getShortProductName } from '../utils/product-name'
 
@@ -38,21 +38,6 @@ export interface StatementLine {
    */
   product: string
   buyer: string
-  /**
-   * De dónde salió que ESTA bodega despachó ESTE envío.
-   *
-   * `registrado` — la bodega estaba asignada antes o al momento del despacho:
-   * es un registro de lo que pasó.
-   *
-   * `atribuido` — la fila se creó bastante después del despacho, en el
-   * backfill del 2026-08-18, deduciendo la bodega por el canal ("si es agencia
-   * es de Daniel, si es Flex es de Gina"). **Es una inferencia, no un
-   * registro**, y esa regla ya falló una vez: seis envíos de agencia estaban
-   * cargados a Gina siendo de Daniel. La usuaria lo señaló el 2026-08-20 —
-   * la app no existía cuando salieron esos paquetes, así que no hay forma de
-   * saberlo desde acá.
-   */
-  attribution: 'registrado' | 'atribuido'
 }
 
 export interface BillingStatement {
@@ -60,9 +45,15 @@ export interface BillingStatement {
   warehouseName: string
   from: string
   to: string
+  /** Solo envíos REGISTRADOS al despachar. Ver `sinRegistro`. */
   lines: StatementLine[]
-  /** Cuántas líneas son inferencia y no registro — si hay alguna, la cuenta se marca. */
-  inferredCount: number
+  /**
+   * Envíos del rango que existen pero de los que **no sabemos qué bodega los
+   * despachó**: son anteriores a que la app llevara la cuenta y su bodega se
+   * dedujo por el canal. No se listan ni se cobran; ese período se salda con la
+   * cuenta de cobro de la propia bodega.
+   */
+  sinRegistro: number
   packagesTotal: number
   packagesAmount: number
   adjustments: { note: string; amount: number }[]
@@ -78,11 +69,7 @@ interface ShipmentRow {
   created_at: string
 }
 
-/**
- * Dos horas de tolerancia: una fila creada mucho después del despacho no la
- * escribió nadie mirando el paquete salir, la escribió una corrección posterior.
- */
-const BACKFILL_TOLERANCE_MS = 2 * 60 * 60 * 1000
+
 
 interface MlOrder {
   pack_id: number | null
@@ -153,7 +140,13 @@ export async function getBillingStatement(
   if (!warehouse) return null
 
   const fees = { feeFlex: warehouse.fee_per_package_flex, feeAgencia: warehouse.fee_per_package_agencia }
-  const rows = shipments ?? []
+
+  // Un envio de agencia asignado despues del despacho no se lista ni se cobra:
+  // presentarlo como despacho de esta bodega seria especular. Flex si, porque
+  // solo Gina hace Flex. Ver `isAttributionCertain`.
+  const todos = shipments ?? []
+  const rows = todos.filter(isAttributionCertain)
+  const sinRegistro = todos.length - rows.length
 
   // Una orden por envío. Si ML no responde por alguna, la línea igual aparece
   // con lo que sabemos localmente: perder un envío de la cuenta es peor que
@@ -178,10 +171,6 @@ export async function getBillingStatement(
       fee: feeFor(s.fulfillment_type, fees),
       product: describeItems(order, packing),
       buyer: order?.buyer?.nickname ?? '—',
-      attribution:
-        new Date(s.created_at).getTime() > new Date(s.delivered_at).getTime() + BACKFILL_TOLERANCE_MS
-          ? 'atribuido'
-          : 'registrado',
     }
   })
 
@@ -195,7 +184,7 @@ export async function getBillingStatement(
     from,
     to,
     lines,
-    inferredCount: lines.filter((l) => l.attribution === 'atribuido').length,
+    sinRegistro,
     packagesTotal: lines.length,
     packagesAmount,
     adjustments: adj,

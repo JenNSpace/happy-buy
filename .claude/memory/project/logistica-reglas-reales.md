@@ -195,9 +195,22 @@ estaban cargados a Gina siendo de Daniel.
 la fila no la escribió nadie viendo salir el paquete — la escribió una corrección posterior. La
 cuenta de cobro ahora marca esas líneas con `≈` y avisa arriba cuántas son.
 
-**La regla general:** cuando un dato salga de una inferencia y no de un registro, la pantalla
-tiene que decirlo, sobre todo si con eso se paga plata. Presentar una deducción con la misma cara
-que un hecho es como se cuela un error que nadie puede detectar después.
+**Pero las dos bodegas NO están igual**, y Jen lo corrigió enseguida: *"daniel y gina son
+diferentes, tenemos todo agosto de gina"*. Los datos le dan la razón:
 
-Para el período anterior a la app, **la única fuente confiable es la cuenta de cobro de la propia
-bodega**. La del sistema sirve para contrastar, no para reemplazarla.
+| Bodega | Deducidos | Canal | ¿Sirve? |
+|---|---|---|---|
+| Gina | 8 | **todos Flex** | **Sí** — solo ella hace Flex, no hay ambigüedad |
+| Daniel | 18 | **todos agencia** | **No** — Gina también hace agencia |
+
+De ahí sale la regla que quedó en el código (`isAttributionCertain`): **un envío cuenta si quedó
+registrado al despachar O si es Flex.** Lo que no cuenta es agencia asignada después.
+
+Y como el corte no es la misma fecha para las dos, vive en `warehouses.ledger_start`:
+Villa Del Rosario desde el **1 de agosto**, Galerías desde el **15**. Lo anterior de Daniel se
+saldó con un ajuste de apertura de $125.000 tomado de su cuenta de cobro, no calculado.
+
+**La regla general:** cuando un dato salga de una inferencia y no de un registro, la pantalla
+tiene que decirlo, y si con eso se paga plata, no se cuenta: se pide la cuenta de la bodega.
+Presentar una deducción con la misma cara que un hecho es como se cuela un error que nadie puede
+detectar después.
