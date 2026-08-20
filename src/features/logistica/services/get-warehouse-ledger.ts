@@ -53,6 +53,18 @@ export interface WarehouseLedger {
   adjustments: LedgerAdjustment[]
 }
 
+/**
+ * Desde cuándo cuenta la cuenta corriente.
+ *
+ * Los pagos a las bodegas solo empezaron a registrarse en el sistema en agosto
+ * de 2026. Sumar los envíos desde el principio de los tiempos contra unos pagos
+ * que arrancan en agosto deja la cuenta desbalanceada por construcción: los
+ * despachos anteriores ya se liquidaron por fuera, así que contarlos otra vez
+ * es cobrarlos dos veces. Aparecio de verdad — un envio de octubre de 2025
+ * asignado a Galerias estaba inflando su saldo en $5.000 (2026-08-20).
+ */
+const LEDGER_START = '2026-08-01T00:00:00-05:00'
+
 interface WarehouseRow {
   id: string
   name: string
@@ -123,16 +135,19 @@ async function buildLedger(
       .select('fulfillment_type')
       .eq('warehouse_id', w.id)
       .not('delivered_at', 'is', null)
+      .gte('delivered_at', LEDGER_START)
       .returns<{ fulfillment_type: string | null }[]>(),
     supabase
       .from('warehouse_adjustments')
       .select('id, amount_delta, note, period_start')
       .eq('warehouse_id', w.id)
+      .gte('period_start', LEDGER_START.slice(0, 10))
       .returns<{ id: string; amount_delta: number; note: string; period_start: string }[]>(),
     supabase
       .from('warehouse_payments')
       .select('id, amount, packages, period_start, period_end, note, paid_at')
       .eq('warehouse_id', w.id)
+      .gte('paid_at', LEDGER_START)
       .order('paid_at', { ascending: false })
       .returns<
         {
