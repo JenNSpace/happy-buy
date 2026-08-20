@@ -159,11 +159,6 @@ export async function getPendingShipmentsForAdmin(): Promise<PendingShipment[]> 
           itemId: i.item.id,
           title: i.item.title,
           quantity: i.quantity,
-          sku: i.item.seller_sku,
-          attributes:
-            i.item.variation_attributes.length > 0
-              ? i.item.variation_attributes.map((a) => `${a.name}: ${a.value_name}`).join(' · ')
-              : null,
         })),
         warehouseId: local?.warehouse_id ?? null,
         deliveredAt: local?.delivered_at ?? null,

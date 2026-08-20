@@ -7,6 +7,7 @@ import { UrgencyBanner } from './UrgencyBanner'
 import { FulfillmentBadge, FULFILLMENT_BORDER_STYLE, FULFILLMENT_CARD_BG } from './FulfillmentBadge'
 import { DispatchSummaryTiles } from './DispatchSummaryTiles'
 import { ProductLine } from './ProductLine'
+import type { PackingMap } from '../utils/product-name'
 import { getDispatchMessage } from '../utils/dispatch-cutoff'
 import { affectsReputation } from '../utils/reputation'
 import { getCountdownInfo } from '../utils/countdown'
@@ -85,11 +86,11 @@ const WAREHOUSE_THEMES: ColumnTheme[] = [
 function ShipmentCard({
   shipment,
   warehouses,
-  shortNames,
+  packing,
 }: {
   shipment: PendingShipment
   warehouses: Warehouse[]
-  shortNames: Record<string, string>
+  packing: PackingMap
 }) {
   const [warehouseId, setWarehouseId] = useState(shipment.warehouseId ?? '')
   const [saving, setSaving] = useState(false)
@@ -146,22 +147,19 @@ function ShipmentCard({
 
       <div className="mb-2 space-y-1.5">
         {shipment.items.map((item, i) => (
-          <div key={i}>
-            <ProductLine itemId={item.itemId} title={item.title} quantity={item.quantity} shortNames={shortNames} />
-            {(item.attributes || item.sku) && (
-              <p className="ml-11 text-[11px] text-gray-400">
-                {item.attributes}
-                {item.attributes && item.sku ? ' · ' : ''}
-                {item.sku ? `SKU: ${item.sku}` : ''}
-              </p>
-            )}
-          </div>
+          <ProductLine key={i} itemId={item.itemId} title={item.title} quantity={item.quantity} packing={packing} />
         ))}
       </div>
 
       <div className="mb-2 flex items-center justify-between">
         <span className="text-xs text-gray-500">
-          {new Date(shipment.dateCreated).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })}
+          {new Date(shipment.dateCreated).toLocaleString('es-CO', {
+            day: '2-digit',
+            month: 'short',
+            hour: 'numeric',
+            minute: '2-digit',
+            timeZone: 'America/Bogota',
+          })}
         </span>
         <Countdown deadline={shipment.deadline} />
       </div>
@@ -216,14 +214,14 @@ function ShipmentColumn({
   warehouses,
   emptyLabel,
   theme,
-  shortNames,
+  packing,
 }: {
   title: string
   items: PendingShipment[]
   warehouses: Warehouse[]
   emptyLabel: string
   theme: ColumnTheme
-  shortNames: Record<string, string>
+  packing: PackingMap
 }) {
   return (
     <div className={`flex flex-col overflow-hidden rounded-xl border-2 ${theme.accentBorder} bg-white shadow-sm`}>
@@ -238,7 +236,7 @@ function ShipmentColumn({
         {items.length === 0 ? (
           <p className="p-4 text-xs text-gray-400">{emptyLabel}</p>
         ) : (
-          items.map((s) => <ShipmentCard key={s.shipmentId} shipment={s} warehouses={warehouses} shortNames={shortNames} />)
+          items.map((s) => <ShipmentCard key={s.shipmentId} shipment={s} warehouses={warehouses} packing={packing} />)
         )}
       </div>
     </div>
@@ -248,12 +246,12 @@ function ShipmentColumn({
 export function AdminLogisticsBoard({
   shipments,
   warehouses,
-  shortNames,
+  packing,
   fullSummary,
 }: {
   shipments: PendingShipment[]
   warehouses: Warehouse[]
-  shortNames: Record<string, string>
+  packing: PackingMap
   fullSummary: FullSummary | null
 }) {
   const groups = useMemo(() => {
@@ -289,7 +287,7 @@ export function AdminLogisticsBoard({
           warehouses={warehouses}
           emptyLabel="Todo lo pendiente ya tiene bodega asignada."
           theme={UNASSIGNED_THEME}
-          shortNames={shortNames}
+          packing={packing}
         />
 
         {groups.byWarehouse.map(({ warehouse, items }, i) => (
@@ -300,7 +298,7 @@ export function AdminLogisticsBoard({
             warehouses={warehouses}
             emptyLabel="Nada asignado a esta bodega por ahora."
             theme={WAREHOUSE_THEMES[i % WAREHOUSE_THEMES.length]}
-            shortNames={shortNames}
+            packing={packing}
           />
         ))}
       </div>

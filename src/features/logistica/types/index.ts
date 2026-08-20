@@ -4,8 +4,6 @@ export interface PendingShipmentItem {
   itemId: string
   title: string
   quantity: number
-  sku: string | null
-  attributes: string | null
 }
 
 export interface PendingShipment {
@@ -33,6 +31,8 @@ export interface BodegaShipmentItem {
 
 export interface BodegaShipment {
   shipmentId: number
+  /** Cuándo entró la venta — la hora es lo que permite cuadrar contra el cuaderno de la bodega. */
+  dateCreated: string
   items: BodegaShipmentItem[]
   address: string
   deadline: string | null

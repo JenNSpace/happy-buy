@@ -1,12 +1,12 @@
-import { getShortProductName } from '../utils/product-name'
+import { getShortProductName, type PackingMap } from '../utils/product-name'
 import type { DeliveredShipment } from '../services/get-delivered-today'
 
 export function DeliveredTodaySection({
   shipments,
-  shortNames,
+  packing,
 }: {
   shipments: DeliveredShipment[]
-  shortNames: Record<string, string>
+  packing: PackingMap
 }) {
   return (
     <div className="mt-8">
@@ -24,7 +24,7 @@ export function DeliveredTodaySection({
                 {s.items.map((item, i) => (
                   <p key={i} className="text-sm text-gray-600">
                     <span className="font-semibold">{item.quantity}×</span>{' '}
-                    {getShortProductName(shortNames, item.itemId, item.description)}
+                    {getShortProductName(packing, item.itemId, item.description)}
                   </p>
                 ))}
               </div>

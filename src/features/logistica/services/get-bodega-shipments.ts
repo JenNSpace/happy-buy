@@ -22,6 +22,7 @@ interface MlShipmentItem {
 interface MlShipment extends MlShipmentCore {
   id: number
   order_id: number
+  date_created: string
   shipping_items: MlShipmentItem[]
   receiver_address: { address_line: string; city?: { name: string } }
 }
@@ -76,6 +77,7 @@ export async function getBodegaShipments(): Promise<BodegaShipment[]> {
     const fulfillmentType = getFulfillmentType(shipment)
     return {
       shipmentId: shipment.id,
+      dateCreated: shipment.date_created,
       items: shipment.shipping_items.map((i) => ({ itemId: i.id, description: i.description, quantity: i.quantity })),
       address: [shipment.receiver_address.address_line, shipment.receiver_address.city?.name]
         .filter(Boolean)

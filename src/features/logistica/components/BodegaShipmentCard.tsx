@@ -7,6 +7,7 @@ import { getCountdownInfo, TIER_TEXT_STYLE, TIER_ICON } from '../utils/countdown
 import { getDispatchMessage } from '../utils/dispatch-cutoff'
 import { FulfillmentBadge, FULFILLMENT_BORDER_STYLE } from './FulfillmentBadge'
 import { ProductLine } from './ProductLine'
+import type { PackingMap } from '../utils/product-name'
 import type { BodegaShipment } from '../types'
 
 const CARD_BORDER_STYLE = {
@@ -19,10 +20,10 @@ const CARD_BORDER_STYLE = {
 
 export function BodegaShipmentCard({
   shipment,
-  shortNames,
+  packing,
 }: {
   shipment: BodegaShipment
-  shortNames: Record<string, string>
+  packing: PackingMap
 }) {
   const router = useRouter()
   const [delivering, setDelivering] = useState(false)
@@ -76,11 +77,21 @@ export function BodegaShipmentCard({
                 itemId={item.itemId}
                 title={item.description}
                 quantity={item.quantity}
-                shortNames={shortNames}
+                packing={packing}
               />
             ))}
           </div>
           <p className="mt-1 text-sm text-gray-500">{shipment.address}</p>
+          <p className="mt-1 text-xs text-gray-400">
+            Vendido el{' '}
+            {new Date(shipment.dateCreated).toLocaleString('es-CO', {
+              day: '2-digit',
+              month: 'short',
+              hour: 'numeric',
+              minute: '2-digit',
+              timeZone: 'America/Bogota',
+            })}
+          </p>
           <p className={`mt-1 text-xs ${TIER_TEXT_STYLE[countdown.tier]}`}>
             {TIER_ICON[countdown.tier]} {countdown.label}
           </p>

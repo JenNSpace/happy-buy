@@ -4,7 +4,7 @@ import { getPendingShipmentsForAdmin } from '@/features/logistica/services/get-p
 import { getBodegaShipments } from '@/features/logistica/services/get-bodega-shipments'
 import { getDeliveredToday } from '@/features/logistica/services/get-delivered-today'
 import { getMyWarehouseEarningsThisMonth, getAllWarehouseEarningsThisMonth } from '@/features/logistica/services/get-warehouse-earnings'
-import { getShortNameMap } from '@/features/inventario/services/get-product-catalog'
+import { getPackingMap } from '@/features/inventario/services/get-product-catalog'
 import { AdminLogisticsBoard } from '@/features/logistica/components/AdminLogisticsBoard'
 import { BodegaShipmentCard } from '@/features/logistica/components/BodegaShipmentCard'
 import { DeliveredTodaySection } from '@/features/logistica/components/DeliveredTodaySection'
@@ -45,12 +45,12 @@ export default async function LogisticaPage() {
     // a warehouse, so the earnings and unassigned lists below see them.
     await syncDispatchedShipments()
 
-    const [shipments, { data: warehouses }, allEarnings, shortNames, unassigned, fullSummary] = await Promise.all([
+    const [shipments, { data: warehouses }, allEarnings, packing, unassigned, fullSummary] = await Promise.all([
       getPendingShipmentsForAdmin(),
       // Full never gets packages assigned — ML dispatches it end to end.
       supabase.from('warehouses').select('*').eq('is_fulfillment', false).order('name'),
       getAllWarehouseEarningsThisMonth(),
-      getShortNameMap(),
+      getPackingMap(),
       getUnassignedDispatched(),
       getFullSummary(),
     ])
@@ -64,7 +64,7 @@ export default async function LogisticaPage() {
         <AdminLogisticsBoard
           shipments={shipments}
           warehouses={warehouses ?? []}
-          shortNames={shortNames}
+          packing={packing}
           fullSummary={fullSummary}
         />
       </div>
@@ -77,7 +77,7 @@ export default async function LogisticaPage() {
   const shipments = await getBodegaShipments()
   const delivered = await getDeliveredToday()
   const earnings = await getMyWarehouseEarningsThisMonth()
-  const shortNames = await getShortNameMap()
+  const packing = await getPackingMap()
   const name = profile?.full_name ?? 'de nuevo'
 
   return (
@@ -95,13 +95,13 @@ export default async function LogisticaPage() {
           <UrgencyBanner deadlines={shipments.map((s) => s.deadline)} />
           <div className="space-y-3">
             {shipments.map((s) => (
-              <BodegaShipmentCard key={s.shipmentId} shipment={s} shortNames={shortNames} />
+              <BodegaShipmentCard key={s.shipmentId} shipment={s} packing={packing} />
             ))}
           </div>
         </>
       )}
 
-      <DeliveredTodaySection shipments={delivered} shortNames={shortNames} />
+      <DeliveredTodaySection shipments={delivered} packing={packing} />
       {earnings && <WarehouseEarningsTable earnings={earnings} />}
     </div>
   )
