@@ -174,3 +174,30 @@ paquete estancado. Ver `isLateForMl` en `get-shipment-sla.ts` y el tier `next_ro
 nada que hacer se vuelve ruido, y entonces la alarma de verdad no se ve. Ya había pasado en el
 dashboard con ocho filas rojas. Antes de pintar algo de rojo, preguntarse **qué acción concreta
 puede tomar quien lo ve en este momento**; si la respuesta es "ninguna hasta mañana", no es rojo.
+
+## La asignación histórica es una DEDUCCIÓN, no un registro (2026-08-20)
+
+Jen frenó una cuenta de cobro con la pregunta correcta: *"tú no tienes cómo saber qué paquetes
+despachó Daniel, porque ni estaba construida la app; ¿de dónde sacas que esto es de ahí?"*.
+
+Tenía razón. Los números:
+
+| Bodega | Envíos | Registrados al despachar | **Deducidos después** |
+|---|---|---|---|
+| Galerías | 28 | 9 | **19** |
+| Villa Del Rosario | 25 | 17 | **8** |
+
+Los 19 de Daniel se asignaron en bloque el **18-ago 12:39 pm por SQL**, aplicando *"si es agencia
+es de Daniel, si es Flex es de Gina"*. **Esa regla ya había fallado**: seis envíos de agencia
+estaban cargados a Gina siendo de Daniel.
+
+**Cómo se distingue en los datos:** si `shipments.created_at` es muy posterior a `delivered_at`,
+la fila no la escribió nadie viendo salir el paquete — la escribió una corrección posterior. La
+cuenta de cobro ahora marca esas líneas con `≈` y avisa arriba cuántas son.
+
+**La regla general:** cuando un dato salga de una inferencia y no de un registro, la pantalla
+tiene que decirlo, sobre todo si con eso se paga plata. Presentar una deducción con la misma cara
+que un hecho es como se cuela un error que nadie puede detectar después.
+
+Para el período anterior a la app, **la única fuente confiable es la cuenta de cobro de la propia
+bodega**. La del sistema sirve para contrastar, no para reemplazarla.
