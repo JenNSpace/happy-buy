@@ -35,3 +35,23 @@ export async function getShipmentSla(shipmentId: number): Promise<ShipmentSla> {
     return { expectedDate: null, status: null }
   }
 }
+
+/**
+ * Si Mercado Libre da este envío por atrasado. Es la ÚNICA alarma real.
+ *
+ * Nuestro corte es más estricto a propósito (Flex 1 pm contra las 23:00 de ML)
+ * para que la bodega alcance al transportista; pasarse de él significa "sale en
+ * la próxima ronda", no "hay una emergencia". Confundir las dos cosas ponía un
+ * rojo de alarma sobre una tarjeta cuyo propio texto decía que nadie podía
+ * hacer nada hoy (lo señaló la usuaria el 2026-08-20).
+ *
+ * Si ML no devolvió estado, se cae a comparar el día: un plazo que quedó en un
+ * día anterior al de hoy sí es un paquete estancado.
+ */
+export function isLateForMl(sla: ShipmentSla, now: Date = new Date()): boolean {
+  if (sla.status) return sla.status !== 'on_time'
+  if (!sla.expectedDate) return false
+
+  const day = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'America/Bogota' })
+  return day(new Date(sla.expectedDate)) < day(now)
+}

@@ -10,7 +10,7 @@ import {
 } from './parse-shipment'
 import { syncAutoDelivered } from './sync-delivered'
 import { getDispatchCutoff } from '../utils/dispatch-cutoff'
-import { getShipmentSla } from './get-shipment-sla'
+import { getShipmentSla, isLateForMl } from './get-shipment-sla'
 import type { BodegaShipment } from '../types'
 
 interface MlShipmentItem {
@@ -84,6 +84,7 @@ export async function getBodegaShipments(): Promise<BodegaShipment[]> {
         .join(', '),
       deadline: getDispatchCutoff(fulfillmentType, slas[index].expectedDate),
       slaStatus: slas[index].status,
+      isLate: isLateForMl(slas[index]),
       fulfillmentType,
       printed: isLabelPrinted(shipment),
       dispatchState: getDispatchState(shipment),

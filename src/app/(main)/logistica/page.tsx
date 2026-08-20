@@ -92,7 +92,7 @@ export default async function LogisticaPage() {
         <p className="text-sm text-gray-500">No tienes envíos pendientes por ahora.</p>
       ) : (
         <>
-          <UrgencyBanner deadlines={shipments.map((s) => s.deadline)} />
+          <UrgencyBanner items={shipments.map((s) => ({ deadline: s.deadline, isLate: s.isLate }))} />
           <div className="space-y-3">
             {shipments.map((s) => (
               <BodegaShipmentCard key={s.shipmentId} shipment={s} packing={packing} />

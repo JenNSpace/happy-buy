@@ -10,7 +10,7 @@ import {
   type MlShipmentCore,
 } from './parse-shipment'
 import { syncAutoDelivered } from './sync-delivered'
-import { getShipmentSla } from './get-shipment-sla'
+import { getShipmentSla, isLateForMl } from './get-shipment-sla'
 import { getDispatchCutoff } from '../utils/dispatch-cutoff'
 import type { Shipment } from '@/types/database'
 import type { PendingShipment } from '../types'
@@ -152,6 +152,7 @@ export async function getPendingShipmentsForAdmin(): Promise<PendingShipment[]> 
         dateCreated: order.date_created,
         deadline: getDispatchCutoff(fulfillmentType, sla.expectedDate),
         slaStatus: sla.status,
+        isLate: isLateForMl(sla),
         fulfillmentType,
         printed: isLabelPrinted(details),
         buyerNickname: order.buyer.nickname,

@@ -3,11 +3,21 @@
 import { useEffect, useState } from 'react'
 import { getCountdownInfo } from '../utils/countdown'
 
+export interface UrgencyItem {
+  deadline: string | null
+  /** ML da el envío por atrasado — ver `isLateForMl`. */
+  isLate: boolean
+}
+
 /**
- * Rolls up every visible deadline into one "you need to act now" line —
- * a single package buried in a long list is easy to miss, this isn't.
+ * Resume en una línea lo que exige acción — un paquete solo, enterrado en una
+ * lista larga, es fácil de pasar por alto.
+ *
+ * Deliberadamente NO cuenta los que ya se pasaron de nuestro corte pero salen
+ * en la próxima ronda: nadie puede hacer nada con ellos hoy y anunciarlos como
+ * urgentes vuelve el banner ruido de fondo.
  */
-export function UrgencyBanner({ deadlines }: { deadlines: (string | null)[] }) {
+export function UrgencyBanner({ items }: { items: UrgencyItem[] }) {
   const [, forceTick] = useState(0)
 
   useEffect(() => {
@@ -15,7 +25,7 @@ export function UrgencyBanner({ deadlines }: { deadlines: (string | null)[] }) {
     return () => clearInterval(interval)
   }, [])
 
-  const infos = deadlines.map((d) => getCountdownInfo(d))
+  const infos = items.map((i) => getCountdownInfo(i.deadline, new Date(), { isLate: i.isLate }))
   const overdue = infos.filter((i) => i.tier === 'overdue').length
   const urgent = infos.filter((i) => i.tier === 'urgent').length
 
@@ -25,8 +35,7 @@ export function UrgencyBanner({ deadlines }: { deadlines: (string | null)[] }) {
     <div className="mb-4 space-y-1 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
       {overdue > 0 && (
         <p>
-          🔴 {overdue} paquete{overdue > 1 ? 's' : ''} venci{overdue > 1 ? 'eron' : 'ó'} su fecha límite de
-          entrega.
+          🔴 {overdue} paquete{overdue > 1 ? 's' : ''} atrasado{overdue > 1 ? 's' : ''} según Mercado Libre.
         </p>
       )}
       {urgent > 0 && (

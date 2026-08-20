@@ -8,25 +8,10 @@ import { DispatchSummaryTiles } from './DispatchSummaryTiles'
 import { ProductLine } from './ProductLine'
 import type { PackingMap } from '../utils/product-name'
 import { getDispatchMessage } from '../utils/dispatch-cutoff'
-import { affectsReputation } from '../utils/reputation'
-import { getCountdownInfo, TIER_TEXT_STYLE, TIER_ICON, type UrgencyTier } from '../utils/countdown'
+import { getCountdownInfo, TIER_TEXT_STYLE, TIER_ICON, URGENCY_BOX_STYLE } from '../utils/countdown'
 import type { PendingShipment } from '../types'
 import type { FullSummary } from '../services/get-full-summary'
 import type { Warehouse } from '@/types/database'
-
-/**
- * La zona de urgencia solo toma superficie de color cuando hay algo que avisar.
- * En `ok`/`unknown` es texto plano — declarar visualmente "todo bien" en cada
- * tarjeta entrena al ojo a saltarse el bloque, y entonces la que sí está
- * vencida se pierde entre las demás.
- */
-const URGENCY_BOX_STYLE: Record<UrgencyTier, string> = {
-  overdue: 'rounded-md border border-red-200 bg-red-50 p-2',
-  urgent: 'rounded-md border border-red-200 bg-red-50 p-2',
-  warning: 'rounded-md border border-amber-200 bg-amber-50 p-2',
-  ok: '',
-  unknown: '',
-}
 
 /** Most urgent first (overdue counts as "most urgent"); items with no deadline sort last. */
 function sortByUrgency(shipments: PendingShipment[]): PendingShipment[] {
@@ -109,17 +94,23 @@ function ShipmentCard({
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [savedAt, setSavedAt] = useState<number | null>(null)
-  const [countdown, setCountdown] = useState(() => getCountdownInfo(shipment.deadline))
+  const [countdown, setCountdown] = useState(() =>
+    getCountdownInfo(shipment.deadline, new Date(), { isLate: shipment.isLate })
+  )
 
   useEffect(() => {
-    const interval = setInterval(() => setCountdown(getCountdownInfo(shipment.deadline)), 60_000)
+    const interval = setInterval(
+      () => setCountdown(getCountdownInfo(shipment.deadline, new Date(), { isLate: shipment.isLate })),
+      60_000
+    )
     return () => clearInterval(interval)
-  }, [shipment.deadline])
+  }, [shipment.deadline, shipment.isLate])
 
   const isOverdue = countdown.tier === 'overdue'
-  const dispatchMessage = getDispatchMessage(shipment.fulfillmentType, shipment.deadline, isOverdue)
-  // Solo ML sabe si esto le pega a la reputación — nuestro corte es más estricto a propósito.
-  const hurtsReputation = affectsReputation(shipment.slaStatus)
+  // Nuestro corte ya pasó, con o sin alarma de ML: el texto tiene que dejar de
+  // decir "hoy" en los dos casos.
+  const pastCutoff = isOverdue || countdown.tier === 'next_round'
+  const dispatchMessage = getDispatchMessage(shipment.fulfillmentType, shipment.deadline, pastCutoff)
 
   async function handleChange(nextWarehouseId: string) {
     const previous = warehouseId
@@ -200,7 +191,7 @@ function ShipmentCard({
           aviso que sí importa pasa desapercibido. Va aparte de la caja de
           urgencia porque son señales independientes: ML puede darlo por on_time
           con nuestro corte ya vencido, y al revés. */}
-      {hurtsReputation === true && (
+      {shipment.isLate && (
         <p className="mb-3 text-xs font-bold text-red-700">⚠ Afecta tu reputación</p>
       )}
 
@@ -312,7 +303,7 @@ export function AdminLogisticsBoard({
 
       <SummaryCounts shipments={shipments} byWarehouse={groups.byWarehouse} />
 
-      <UrgencyBanner deadlines={shipments.map((s) => s.deadline)} />
+      <UrgencyBanner items={shipments.map((s) => ({ deadline: s.deadline, isLate: s.isLate }))} />
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
         <ShipmentColumn

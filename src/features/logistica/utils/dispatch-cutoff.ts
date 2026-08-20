@@ -160,7 +160,8 @@ function laterDayLabel(deadline: string, now: Date = new Date()): string {
 export function getDispatchMessage(
   fulfillmentType: FulfillmentType,
   deadline: string | null,
-  isOverdue: boolean,
+  /** Nuestro corte ya pasó — distinto de "ML lo da por atrasado", ver `getCountdownInfo`. */
+  pastCutoff: boolean,
   now: Date = new Date()
 ): string | null {
   const hour = CUTOFF_HOUR_BY_TYPE[fulfillmentType]
@@ -176,7 +177,7 @@ export function getDispatchMessage(
     // Ya pasó la 1 pm de HOY: la ronda siguiente no la sabemos sin preguntarle a ML
     // (un viernes por la noche es el lunes), así que no se nombra un día que no
     // podemos verificar. Decir "pasa hoy" a las 10 pm era simplemente falso.
-    if (isOverdue) {
+    if (pastCutoff) {
       return 'El transportista ya no pasa más hoy. Este sale en la próxima ronda — deja la etiqueta impresa y pegada antes de la 1 pm.'
     }
     return 'El transportista pasa hoy a la 1 pm como máximo. La etiqueta tiene que estar impresa y pegada antes de que llegue.'
@@ -187,7 +188,7 @@ export function getDispatchMessage(
   }
 
   // "Despáchalo ya" no sirve a las 10 pm con la agencia cerrada.
-  if (isOverdue) {
+  if (pastCutoff) {
     return `Se pasó la hora de corte (${hour} hs) — llévalo apenas puedas a una agencia.`
   }
 

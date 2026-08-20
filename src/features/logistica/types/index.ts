@@ -21,6 +21,8 @@ export interface PendingShipment {
   dispatchState: DispatchState
   /** ML's own verdict ('on_time' | 'delayed'); null when ML didn't answer. */
   slaStatus: string | null
+  /** ML da el envío por atrasado — la única alarma real (ver `isLateForMl`). */
+  isLate: boolean
 }
 
 export interface BodegaShipmentItem {
@@ -41,4 +43,6 @@ export interface BodegaShipment {
   dispatchState: DispatchState
   /** ML's own verdict ('on_time' | 'delayed'); null when ML didn't answer. */
   slaStatus: string | null
+  /** ML da el envío por atrasado — la única alarma real (ver `isLateForMl`). */
+  isLate: boolean
 }

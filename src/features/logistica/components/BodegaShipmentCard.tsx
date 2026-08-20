@@ -3,27 +3,12 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { markDelivered } from '../services/mark-delivered'
-import { getCountdownInfo, TIER_TEXT_STYLE, TIER_ICON } from '../utils/countdown'
+import { getCountdownInfo, TIER_TEXT_STYLE, TIER_ICON, URGENCY_BOX_STYLE } from '../utils/countdown'
 import { getDispatchMessage } from '../utils/dispatch-cutoff'
 import { FulfillmentBadge, FULFILLMENT_BORDER_STYLE, FULFILLMENT_CARD_BG } from './FulfillmentBadge'
 import { ProductLine } from './ProductLine'
 import type { PackingMap } from '../utils/product-name'
 import type { BodegaShipment } from '../types'
-
-/**
- * La urgencia toma superficie SOLO cuando hay algo que avisar — igual que en el
- * tablero de admin, para que las dos vistas se lean como un mismo sistema. El
- * color del canal se queda con el borde izquierdo y el fondo suave de la
- * tarjeta (FULFILLMENT_CARD_BG), que es lo que la usuaria pidió el 2026-08-06
- * para distinguir Flex de agencia de un vistazo.
- */
-const URGENCY_BOX_STYLE = {
-  overdue: 'rounded-md border border-red-200 bg-red-50 p-2',
-  urgent: 'rounded-md border border-red-200 bg-red-50 p-2',
-  warning: 'rounded-md border border-amber-200 bg-amber-50 p-2',
-  ok: '',
-  unknown: '',
-} as const
 
 export function BodegaShipmentCard({
   shipment,
@@ -35,12 +20,17 @@ export function BodegaShipmentCard({
   const router = useRouter()
   const [delivering, setDelivering] = useState(false)
   const [delivered, setDelivered] = useState(false)
-  const [countdown, setCountdown] = useState(() => getCountdownInfo(shipment.deadline))
+  const [countdown, setCountdown] = useState(() =>
+    getCountdownInfo(shipment.deadline, new Date(), { isLate: shipment.isLate })
+  )
 
   useEffect(() => {
-    const interval = setInterval(() => setCountdown(getCountdownInfo(shipment.deadline)), 60_000)
+    const interval = setInterval(
+      () => setCountdown(getCountdownInfo(shipment.deadline, new Date(), { isLate: shipment.isLate })),
+      60_000
+    )
     return () => clearInterval(interval)
-  }, [shipment.deadline])
+  }, [shipment.deadline, shipment.isLate])
 
   async function handleDeliver() {
     setDelivering(true)
@@ -59,7 +49,10 @@ export function BodegaShipmentCard({
   if (delivered) return null
 
   const isOverdue = countdown.tier === 'overdue'
-  const dispatchMessage = getDispatchMessage(shipment.fulfillmentType, shipment.deadline, isOverdue)
+  // Nuestro corte ya pasó, con o sin alarma de ML: el texto tiene que dejar de
+  // decir "hoy" en los dos casos.
+  const pastCutoff = isOverdue || countdown.tier === 'next_round'
+  const dispatchMessage = getDispatchMessage(shipment.fulfillmentType, shipment.deadline, pastCutoff)
 
   return (
     <div
