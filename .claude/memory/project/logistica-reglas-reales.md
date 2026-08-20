@@ -83,11 +83,26 @@ quién creerle sino **bajar al envío individual** y dejar que la persona lo rec
 los envíos que salen **fuera del lote**: los dos olvidados salieron uno junto a otro despacho y
 otro una hora después del grupo.
 
-## Pendiente: inventario sin descontar
+## El inventario NO estaba inflado (verificado 2026-08-20)
 
-Hay envíos asignados que **nunca generaron movimiento de inventario**, así que el stock está
-inflado. Asignar por SQL no dispara esa lógica (sí lo hace `assignWarehouse` en la app).
-Requiere reconstruir qué producto salió en cada envío. **No resuelto.**
+Durante días arrastré como pendiente que "el stock está inflado porque hay envíos sin
+`inventory_movements`". **Es falso, y Jen lo cuestionó:** *"¿cuál inventario inflado hay? eso no
+es real."*
+
+Lo que se me había pasado: el **conteo físico del 18 de agosto** reseteó el stock a lo que
+reportaron Gina y Daniel. Un conteo físico **borra la historia anterior** — los 65 envíos sin
+movimiento son de antes y no deben descontarse de nada. Desde el conteo, 14 de 14 envíos tienen
+su movimiento.
+
+**Lección doble:**
+1. Un pendiente heredado se verifica antes de repetirlo. Lo repetí en tres mensajes sin correr
+   una sola consulta.
+2. **Al reconciliar inventario, contar por la hora en que el paquete SALIÓ (`delivered_at`), no
+   por la hora en que el sistema registró el movimiento (`created_at`).** Se separan varias horas
+   — dos envíos salieron 3:52 pm y quedaron registrados 8:31 pm. Jen lo detectó preguntando
+   *"¿cuántos pedidos salieron después de las 12:06?"*.
+3. Y otra vez lo mismo: **pedidos ≠ unidades.** Eran 4 pedidos pero 5 bolsas, porque una venta
+   llevaba dos. Confirmado contra `shipping_items` de ML, no contra nuestra base.
 
 ## El DÍA del plazo lo decide ML; la HORA la ponemos nosotros (2026-08-19)
 

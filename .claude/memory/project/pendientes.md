@@ -16,9 +16,16 @@ del 15-ago y una Multitoma del 18-ago) y sus dos etiquetas.
 
 ## Pendientes reales
 
-1. **Inventario que nunca se descontó.** Hay envíos asignados sin `inventory_movements`, así que
-   el stock está inflado. El fix de sincronización evita que siga creciendo, pero lo acumulado
-   sigue ahí. Requiere reconstruir qué producto salió en cada envío histórico.
+1. ~~**Inventario que nunca se descontó.**~~ **FALSO — verificado el 2026-08-20.** La nota venía
+   de antes del **conteo físico del 18 de agosto**, que reseteó el stock a lo que Gina y Daniel
+   contaron (24 / 12 bolsas, 38 cables). Ese conteo borra la historia anterior: los 65 envíos
+   "sin movimiento" son de antes y no deben descontarse de nada. Desde el conteo, **14 de 14**
+   envíos tienen su movimiento. El mecanismo funciona.
+
+   Lo que sí quedó: **1 bolsa de más de Sal Céltica en Villa Del Rosario.** El ajuste del 18-ago
+   se registró como +4 cuando debía ser +3 (el saldo previo era 21, no 20). Pendiente de que Jen
+   cuente la repisa: si hay 19, se aplica −1; si hay 20, el conteo de Gina no incluía los
+   paquetes ya empacados y el sistema está bien.
 2. **El pago de Galerías 1–15 quedó registrado con $0 y 0 paquetes**, porque se marcó cuando el
    sistema no tenía los envíos asignados. Daniel sí cobró $120.000. Se corrige deshaciendo el
    pago y volviéndolo a marcar, ahora que los datos están bien.
