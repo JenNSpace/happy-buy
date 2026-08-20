@@ -2,6 +2,8 @@ import 'server-only'
 import { createClient } from '@/lib/supabase/server'
 import { mlGet } from '@/features/dashboard/services/ml-client'
 import { feeFor } from './get-warehouse-ledger'
+import { getPackingMap } from '@/features/inventario/services/get-product-catalog'
+import { getPackingLine, getShortProductName } from '../utils/product-name'
 
 /**
  * La cuenta de cobro, generada por el sistema en vez de recibida desde el
@@ -26,6 +28,14 @@ export interface StatementLine {
   dispatchedAt: string
   channel: 'flex' | 'agencia'
   fee: number
+  /**
+   * Nombre corto y unidades — ej. "3 × Sal Céltica 454g".
+   *
+   * Es la columna por la que la bodega reconoce el envío: Gina y Daniel no
+   * tienen acceso al número de venta, identifican los despachos por producto
+   * (pedido de la usuaria 2026-08-20). El número de venta se queda igual porque
+   * es lo que le sirve a ella para cruzar contra Mercado Libre.
+   */
   product: string
   buyer: string
 }
@@ -54,12 +64,29 @@ interface MlOrder {
   pack_id: number | null
   id: number
   buyer: { nickname: string }
-  order_items: { item: { title: string }; quantity: number }[]
+  order_items: { item: { id: string; title: string }; quantity: number }[]
 }
 
 function nextDay(date: string): string {
   const [y, m, d] = date.split('-').map(Number)
   return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10)
+}
+
+/**
+ * Lo que iba en la caja, en los mismos términos que la tarjeta de despacho:
+ * nombre corto y unidades FÍSICAS, no la cantidad que muestra ML. Un "Pack X3"
+ * sale como "3 × Sal Céltica 454g" porque son tres bolsas las que empacó.
+ */
+function describeItems(order: MlOrder | null, packing: Awaited<ReturnType<typeof getPackingMap>>): string {
+  if (!order?.order_items?.length) return 'Producto no disponible'
+
+  return order.order_items
+    .map((i) => {
+      const line = getPackingLine(packing, i.item.id, i.quantity)
+      const name = getShortProductName(packing, i.item.id, i.item.title)
+      return line.totalUnits > 1 ? `${line.totalUnits} × ${name}` : name
+    })
+    .join(' + ')
 }
 
 /**
@@ -74,7 +101,7 @@ export async function getBillingStatement(
 ): Promise<BillingStatement | null> {
   const supabase = await createClient()
 
-  const [{ data: warehouse }, { data: shipments }, { data: adjustments }] = await Promise.all([
+  const [{ data: warehouse }, { data: shipments }, { data: adjustments }, packing] = await Promise.all([
     supabase
       .from('warehouses')
       .select('id, name, fee_per_package_flex, fee_per_package_agencia')
@@ -96,6 +123,7 @@ export async function getBillingStatement(
       .gte('period_start', from)
       .lte('period_start', to)
       .returns<{ note: string; amount_delta: number; period_start: string }[]>(),
+    getPackingMap(),
   ])
 
   if (!warehouse) return null
@@ -124,7 +152,7 @@ export async function getBillingStatement(
       dispatchedAt: s.delivered_at,
       channel: s.fulfillment_type === 'flex' ? 'flex' : 'agencia',
       fee: feeFor(s.fulfillment_type, fees),
-      product: order?.order_items?.[0]?.item?.title ?? 'Producto no disponible',
+      product: describeItems(order, packing),
       buyer: order?.buyer?.nickname ?? '—',
     }
   })

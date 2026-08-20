@@ -206,6 +206,9 @@ function PaymentForm({ ledger, onDone }: { ledger: WarehouseLedger; onDone: () =
 
 /** La cuenta de cobro que el sistema arma para mandársela a la bodega. */
 function StatementPanel({ ledger, onClose }: { ledger: WarehouseLedger; onClose: () => void }) {
+  // El canal solo importa si cambia la tarifa. Donde las dos son iguales la
+  // columna repetía "Agencia" en cada fila sin decir nada.
+  const muestraCanal = ledger.feePerPackageFlex !== ledger.feePerPackageAgencia
   const [from, setFrom] = useState(primerDiaDelMes())
   const [to, setTo] = useState(hoyBogota())
   const [statement, setStatement] = useState<BillingStatement | null>(null)
@@ -280,19 +283,24 @@ function StatementPanel({ ledger, onClose }: { ledger: WarehouseLedger; onClose:
             <table className="w-full text-left text-[11px]">
               <thead className="text-gray-400">
                 <tr>
-                  <th className="pb-1 pr-2 font-medium">Venta</th>
+                  {/* El producto va primero: es por donde la bodega reconoce el
+                      envío. El número de venta queda para que Jen lo cruce
+                      contra Mercado Libre, pero ellos no lo ven en su cuenta. */}
+                  <th className="pb-1 pr-2 font-medium">Producto</th>
                   <th className="pb-1 pr-2 font-medium">Despachado</th>
-                  <th className="pb-1 pr-2 font-medium">Canal</th>
+                  {muestraCanal && <th className="pb-1 pr-2 font-medium">Canal</th>}
+                  <th className="pb-1 pr-2 font-medium">Venta</th>
                   <th className="pb-1 text-right font-medium">Tarifa</th>
                 </tr>
               </thead>
               <tbody className="text-gray-600">
                 {statement.lines.map((l) => (
                   <tr key={l.shipmentId} className="border-t border-gray-100">
-                    <td className="py-1 pr-2 font-mono">#{l.saleNumber}</td>
+                    <td className="py-1 pr-2 font-medium text-gray-900">{l.product}</td>
                     <td className="py-1 pr-2 whitespace-nowrap">{fechaHora(l.dispatchedAt)}</td>
-                    <td className="py-1 pr-2 capitalize">{l.channel}</td>
-                    <td className="py-1 text-right">{formatCOP(l.fee)}</td>
+                    {muestraCanal && <td className="py-1 pr-2 capitalize">{l.channel}</td>}
+                    <td className="py-1 pr-2 whitespace-nowrap font-mono text-gray-400">#{l.saleNumber}</td>
+                    <td className="py-1 text-right whitespace-nowrap">{formatCOP(l.fee)}</td>
                   </tr>
                 ))}
               </tbody>
