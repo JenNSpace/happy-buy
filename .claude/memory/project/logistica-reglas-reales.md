@@ -9,8 +9,7 @@ ML muestra "tu comprador debe recibir el paquete antes de las 21 hs" — es cier
 (confirmado por Ricky). La etiqueta tiene que estar impresa y pegada antes de que llegue.
 
 **Un pedido Flex que entra después de la 1 pm sale al día siguiente**, y no debe marcarse
-como atrasado: nadie puede actuar sobre él hasta mañana. Ver `ROLLS_OVER_TO_NEXT_DAY` en
-`dispatch-cutoff.ts`. Agencia sigue en 17:00 (la agencia está abierta, todavía se puede llevar).
+como atrasado: nadie puede actuar sobre él hasta mañana. Agencia también rueda — ver abajo.
 
 ## Los cuadernos usan la fecha de despacho; ML la del día siguiente
 
@@ -89,3 +88,34 @@ otro una hora después del grupo.
 Hay envíos asignados que **nunca generaron movimiento de inventario**, así que el stock está
 inflado. Asignar por SQL no dispara esa lógica (sí lo hace `assignWarehouse` en la app).
 Requiere reconstruir qué producto salió en cada envío. **No resuelto.**
+
+## El DÍA del plazo lo decide ML; la HORA la ponemos nosotros (2026-08-19)
+
+Jen vio una venta de agencia que entró a las **21:36** marcada como *"Venció hace 5h 8min ·
+Afecta tu reputación"*, mientras la pantalla de ML decía *"despáchalo mañana en una agencia ·
+No afecta tu reputación"*. El corte se calculaba siempre contra **hoy**, sin mirar cuándo entró
+el pedido ni el calendario.
+
+**Por qué no se reimplementó la regla.** Contra 50 envíos reales, la regla de ML resultó ser:
+días hábiles + festivos colombianos (todo lo del 15 y 16 de agosto saltó el lunes 17, festivo) +
+un corte intradía + **cuenta desde el pago, no desde la venta**. Un pedido de agencia de las
+16:25 se fue al día siguiente, y uno de las 13:16 se quedó el mismo día. Codificar eso a mano
+era exactamente el error de "verifiqué unos casos y declaré una ley".
+
+**La solución:** `GET /shipments/{id}/sla` devuelve `expected_date` y `status`, y coincide
+exacto con lo que ML le muestra a Jen. Entonces:
+
+- **El día** sale de ML (`sla.expected_date`) — así llegan gratis los festivos y los fines de semana.
+- **La hora** la ponemos nosotros: Flex 13:00, agencia 17:00. La de ML es la promesa de entrega
+  al comprador (23:00 en Flex), no el momento en que pasa el transportista.
+- **`sla.status` (`on_time` / `delayed`) es lo único que decide "afecta tu reputación".** Nuestro
+  corte es más estricto a propósito; que la bodega pierda el courier es urgente pero no es un
+  veredicto sobre la cuenta. Si ML no responde, no se afirma ninguna de las dos cosas.
+
+**Lección que se repite:** cuando el sistema y la pantalla de ML no coinciden, ML tiene un
+endpoint que da la respuesta. Buscarlo antes de deducir la regla. Ver
+[[verificar-contra-la-ui-real]].
+
+**De paso, dos mensajes que mentían a las 10 de la noche:** "el transportista pasa hoy a la 1 pm"
+y "despáchalo ya" con la agencia cerrada. Y un pedido de viernes en la noche ahora dice "el
+lunes", no "mañana".
