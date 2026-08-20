@@ -41,10 +41,11 @@ export function ProductLine({
       </span>
 
       <div className="min-w-0 pt-0.5">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <span className="text-base font-semibold text-gray-900">
             {getShortProductName(packing, itemId, title)}
           </span>
+          {!isMulti && <span className="text-sm text-gray-500">· {line.unitLabel}</span>}
           {line.packLabel && (
             <span className="rounded bg-gray-900 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
               {line.packLabel}
@@ -52,9 +53,13 @@ export function ProductLine({
           )}
         </div>
 
-        <p className={`text-sm ${isMulti ? 'font-semibold text-gray-700' : 'text-gray-500'}`}>{line.unitLabel}</p>
+        {/* Con una sola unidad la palabra va pegada al nombre (arriba): suelta en
+            su propio renglón quedaba un "bolsas" huérfano, y encima repetido por
+            la línea siguiente. Con varias, la línea se convierte en la
+            instrucción completa — es lo que se verifica al cerrar la caja. */}
+        {line.instruction && <p className="text-sm font-semibold text-gray-900">{line.instruction}</p>}
 
-        {line.breakdown && <p className="text-[11px] text-gray-500">{line.breakdown}</p>}
+        {line.mlNote && <p className="text-[11px] text-gray-500">{line.mlNote}</p>}
 
         {/* Sin mapeo no podemos saber si la publicación es un pack: se avisa en vez
             de asumir 1, que es el error que manda el pedido incompleto. */}

@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { assignWarehouse } from '../services/assign-warehouse'
-import { Countdown } from './Countdown'
 import { UrgencyBanner } from './UrgencyBanner'
 import { FulfillmentBadge, FULFILLMENT_BORDER_STYLE, FULFILLMENT_CARD_BG } from './FulfillmentBadge'
 import { DispatchSummaryTiles } from './DispatchSummaryTiles'
@@ -10,10 +9,24 @@ import { ProductLine } from './ProductLine'
 import type { PackingMap } from '../utils/product-name'
 import { getDispatchMessage } from '../utils/dispatch-cutoff'
 import { affectsReputation } from '../utils/reputation'
-import { getCountdownInfo } from '../utils/countdown'
+import { getCountdownInfo, TIER_TEXT_STYLE, TIER_ICON, type UrgencyTier } from '../utils/countdown'
 import type { PendingShipment } from '../types'
 import type { FullSummary } from '../services/get-full-summary'
 import type { Warehouse } from '@/types/database'
+
+/**
+ * La zona de urgencia solo toma superficie de color cuando hay algo que avisar.
+ * En `ok`/`unknown` es texto plano — declarar visualmente "todo bien" en cada
+ * tarjeta entrena al ojo a saltarse el bloque, y entonces la que sí está
+ * vencida se pierde entre las demás.
+ */
+const URGENCY_BOX_STYLE: Record<UrgencyTier, string> = {
+  overdue: 'rounded-md border border-red-200 bg-red-50 p-2',
+  urgent: 'rounded-md border border-red-200 bg-red-50 p-2',
+  warning: 'rounded-md border border-amber-200 bg-amber-50 p-2',
+  ok: '',
+  unknown: '',
+}
 
 /** Most urgent first (overdue counts as "most urgent"); items with no deadline sort last. */
 function sortByUrgency(shipments: PendingShipment[]): PendingShipment[] {
@@ -130,12 +143,16 @@ function ShipmentCard({
     <div
       className={`border-b border-l-4 border-gray-100 p-4 last:border-b-0 ${FULFILLMENT_BORDER_STYLE[shipment.fulfillmentType]} ${FULFILLMENT_CARD_BG[shipment.fulfillmentType]}`}
     >
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+      {/* ZONA 1 — contexto. Una sola línea que nunca se parte: sin `shrink-0` y
+          `truncate` un nickname largo en mayúsculas empujaba el badge del canal
+          a dos renglones y desordenaba la tarjeta entera. */}
+      <div className="mb-2.5 flex items-center justify-between gap-2">
+        <div className="shrink-0">
           <FulfillmentBadge type={shipment.fulfillmentType} />
-          {shipment.printed && <span className="text-[10px] font-medium text-gray-400">🖨 Etiqueta impresa</span>}
         </div>
-        <span className="text-[11px] text-gray-400">{shipment.buyerNickname}</span>
+        <span className="min-w-0 truncate text-[11px] text-gray-400" title={shipment.buyerNickname}>
+          {shipment.buyerNickname}
+        </span>
       </div>
 
       {/* Never hide a shipment we couldn't classify — make the human check it. */}
@@ -145,42 +162,59 @@ function ShipmentCard({
         </p>
       )}
 
-      <div className="mb-2 space-y-1.5">
+      {/* ZONA 2 — qué empacar. Es la única acción física de la tarjeta, así que
+          manda: nada más en la tarjeta compite en tamaño con esto. */}
+      <div className="mb-3 space-y-1.5">
         {shipment.items.map((item, i) => (
           <ProductLine key={i} itemId={item.itemId} title={item.title} quantity={item.quantity} packing={packing} />
         ))}
       </div>
 
-      <div className="mb-2 flex items-center justify-between">
-        <span className="text-xs text-gray-500">
-          {new Date(shipment.dateCreated).toLocaleString('es-CO', {
-            day: '2-digit',
-            month: 'short',
-            hour: 'numeric',
-            minute: '2-digit',
-            timeZone: 'America/Bogota',
-          })}
-        </span>
-        <Countdown deadline={shipment.deadline} />
+      {/* ZONA 3 — cuándo. Solo toma superficie de color cuando hay algo que
+          avisar; en el caso normal es texto plano. El silencio es la señal de
+          que todo va bien. */}
+      <div className={`mb-3 ${URGENCY_BOX_STYLE[countdown.tier]}`}>
+        <div className="flex flex-wrap items-center justify-between gap-x-2">
+          <span className="whitespace-nowrap text-xs text-gray-500">
+            {new Date(shipment.dateCreated).toLocaleString('es-CO', {
+              day: '2-digit',
+              month: 'short',
+              hour: 'numeric',
+              minute: '2-digit',
+              timeZone: 'America/Bogota',
+            })}
+          </span>
+          <span className={`whitespace-nowrap text-sm font-semibold ${TIER_TEXT_STYLE[countdown.tier]}`}>
+            {TIER_ICON[countdown.tier]} {countdown.label}
+          </span>
+        </div>
+        {dispatchMessage && (
+          <p className={`mt-1 text-xs ${isOverdue ? 'font-medium text-red-700' : 'text-gray-500'}`}>
+            {dispatchMessage}
+          </p>
+        )}
       </div>
 
-      {dispatchMessage && (
-        <p className={`mb-1 text-[11px] ${isOverdue ? 'font-medium text-red-600' : 'text-gray-500'}`}>
-          {dispatchMessage}
-        </p>
-      )}
-      {hurtsReputation !== null && (
-        <p className={`mb-3 text-[11px] ${hurtsReputation ? 'font-semibold text-red-600' : 'text-gray-400'}`}>
-          {hurtsReputation ? '⚠ Afecta tu reputación' : 'No afecta tu reputación'}
-        </p>
+      {/* Solo cuando ML dice que SÍ pega. Anunciar "no afecta tu reputación" en
+          el caso bueno le enseña al ojo a saltarse este bloque, y entonces el
+          aviso que sí importa pasa desapercibido. Va aparte de la caja de
+          urgencia porque son señales independientes: ML puede darlo por on_time
+          con nuestro corte ya vencido, y al revés. */}
+      {hurtsReputation === true && (
+        <p className="mb-3 text-xs font-bold text-red-700">⚠ Afecta tu reputación</p>
       )}
 
-      <div className="flex items-center gap-2">
+      {/* ZONA 4 — acción, separada por un hairline. Asignar bodega es lo
+          principal acá; imprimir queda en segundo plano pero con área de toque
+          suficiente para el celular. */}
+      <div className="flex items-center gap-2 border-t border-gray-200/70 pt-3">
         <select
           value={warehouseId}
           onChange={(e) => handleChange(e.target.value)}
           disabled={saving}
-          className="flex-1 rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-happy-green focus:outline-none focus:ring-1 focus:ring-happy-green disabled:opacity-50"
+          className={`min-w-0 flex-1 rounded-md border bg-white px-2 py-2 text-sm focus:border-happy-green focus:outline-none focus:ring-1 focus:ring-happy-green disabled:opacity-50 ${
+            warehouseId ? 'border-gray-300 text-gray-900' : 'border-dashed border-gray-400 text-gray-500'
+          }`}
         >
           <option value="">Sin asignar</option>
           {warehouses.map((w) => (
@@ -193,9 +227,9 @@ function ShipmentCard({
           href={`/api/shipping/label/${shipment.shipmentId}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="whitespace-nowrap text-sm text-happy-green hover:underline"
+          className="shrink-0 whitespace-nowrap rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
         >
-          {shipment.printed ? 'Reimprimir etiqueta' : 'Imprimir etiqueta'}
+          {shipment.printed ? 'Reimprimir' : 'Imprimir'}
         </a>
       </div>
 

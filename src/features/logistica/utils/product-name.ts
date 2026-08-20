@@ -30,8 +30,15 @@ export interface PackingLine {
   unitLabel: string
   /** 'PACK X3' when the listing itself is a bundle, else null. */
   packLabel: string | null
-  /** Where the number came from, shown only when it isn't a plain single unit. */
-  breakdown: string | null
+  /** "Empacar 3 bolsas" — the instruction, only when it isn't a single unit. */
+  instruction: string | null
+  /**
+   * What ML's own screen says, ONLY when it disagrees with our total. That
+   * happens exactly when the listing is a bundle: ML sells "1 unidad" of a
+   * Pack X3. Saying it out loud is what lets someone reconcile the card against
+   * Mercado Libre instead of assuming one of the two is broken.
+   */
+  mlNote: string | null
   /** True when we have no mapping for this listing and the count can't be trusted. */
   unknown: boolean
 }
@@ -57,23 +64,23 @@ export function getPackingLine(packing: PackingMap, itemId: string, quantity: nu
       totalUnits: quantity,
       unitLabel: pluralize('unidad', quantity),
       packLabel: null,
-      breakdown: null,
+      instruction: null,
+      mlNote: null,
       unknown: true,
     }
   }
 
   const totalUnits = quantity * info.unitsPerSale
   const unitLabel = pluralize(info.baseUnit, totalUnits)
-  const packLabel = info.unitsPerSale > 1 ? `PACK X${info.unitsPerSale}` : null
 
-  let breakdown: string | null = null
-  if (quantity > 1 && info.unitsPerSale > 1) {
-    breakdown = `${quantity} ventas × ${info.unitsPerSale} ${pluralize(info.baseUnit, info.unitsPerSale)} = ${totalUnits}`
-  } else if (info.unitsPerSale > 1) {
-    breakdown = `1 venta de ${info.unitsPerSale} ${pluralize(info.baseUnit, info.unitsPerSale)}`
-  } else if (quantity > 1) {
-    breakdown = `${quantity} ${pluralize(info.baseUnit, quantity)} sueltas`
+  return {
+    totalUnits,
+    unitLabel,
+    packLabel: info.unitsPerSale > 1 ? `PACK X${info.unitsPerSale}` : null,
+    instruction: totalUnits > 1 ? `Empacar ${totalUnits} ${unitLabel}` : null,
+    // Solo cuando ML muestra otro número: si la publicación no es un pack, ML y
+    // nosotros decimos lo mismo y repetirlo sería ruido.
+    mlNote: info.unitsPerSale > 1 ? `En Mercado Libre aparece como ${quantity} unidad${quantity > 1 ? 'es' : ''}` : null,
+    unknown: false,
   }
-
-  return { totalUnits, unitLabel, packLabel, breakdown, unknown: false }
 }

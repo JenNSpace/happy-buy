@@ -5,17 +5,24 @@ import { useRouter } from 'next/navigation'
 import { markDelivered } from '../services/mark-delivered'
 import { getCountdownInfo, TIER_TEXT_STYLE, TIER_ICON } from '../utils/countdown'
 import { getDispatchMessage } from '../utils/dispatch-cutoff'
-import { FulfillmentBadge, FULFILLMENT_BORDER_STYLE } from './FulfillmentBadge'
+import { FulfillmentBadge, FULFILLMENT_BORDER_STYLE, FULFILLMENT_CARD_BG } from './FulfillmentBadge'
 import { ProductLine } from './ProductLine'
 import type { PackingMap } from '../utils/product-name'
 import type { BodegaShipment } from '../types'
 
-const CARD_BORDER_STYLE = {
-  overdue: 'border-red-400 bg-red-50',
-  urgent: 'border-red-300 bg-red-50',
-  warning: 'border-amber-300 bg-amber-50',
-  ok: 'border-gray-200 bg-white',
-  unknown: 'border-gray-200 bg-white',
+/**
+ * La urgencia toma superficie SOLO cuando hay algo que avisar — igual que en el
+ * tablero de admin, para que las dos vistas se lean como un mismo sistema. El
+ * color del canal se queda con el borde izquierdo y el fondo suave de la
+ * tarjeta (FULFILLMENT_CARD_BG), que es lo que la usuaria pidió el 2026-08-06
+ * para distinguir Flex de agencia de un vistazo.
+ */
+const URGENCY_BOX_STYLE = {
+  overdue: 'rounded-md border border-red-200 bg-red-50 p-2',
+  urgent: 'rounded-md border border-red-200 bg-red-50 p-2',
+  warning: 'rounded-md border border-amber-200 bg-amber-50 p-2',
+  ok: '',
+  unknown: '',
 } as const
 
 export function BodegaShipmentCard({
@@ -56,13 +63,12 @@ export function BodegaShipmentCard({
 
   return (
     <div
-      className={`rounded-lg border border-l-4 p-4 ${CARD_BORDER_STYLE[countdown.tier]} ${FULFILLMENT_BORDER_STYLE[shipment.fulfillmentType]}`}
+      className={`rounded-lg border border-gray-200 border-l-4 p-4 ${FULFILLMENT_CARD_BG[shipment.fulfillmentType]} ${FULFILLMENT_BORDER_STYLE[shipment.fulfillmentType]}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="mb-1 flex items-center gap-2">
             <FulfillmentBadge type={shipment.fulfillmentType} />
-            {shipment.printed && <span className="text-[10px] font-medium text-gray-400">🖨 Guía impresa</span>}
           </div>
           {/* Never hide a shipment we couldn't classify — make the human check it. */}
           {shipment.dispatchState === 'unknown' && (
@@ -82,24 +88,29 @@ export function BodegaShipmentCard({
             ))}
           </div>
           <p className="mt-1 text-sm text-gray-500">{shipment.address}</p>
-          <p className="mt-1 text-xs text-gray-400">
-            Vendido el{' '}
-            {new Date(shipment.dateCreated).toLocaleString('es-CO', {
-              day: '2-digit',
-              month: 'short',
-              hour: 'numeric',
-              minute: '2-digit',
-              timeZone: 'America/Bogota',
-            })}
-          </p>
-          <p className={`mt-1 text-xs ${TIER_TEXT_STYLE[countdown.tier]}`}>
-            {TIER_ICON[countdown.tier]} {countdown.label}
-          </p>
-          {dispatchMessage && (
-            <p className={`mt-1 text-xs ${isOverdue ? 'font-medium text-red-600' : 'text-gray-500'}`}>
-              {dispatchMessage}
-            </p>
-          )}
+
+          <div className={`mt-2 ${URGENCY_BOX_STYLE[countdown.tier]}`}>
+            <div className="flex flex-wrap items-center justify-between gap-x-2">
+              <span className="whitespace-nowrap text-xs text-gray-400">
+                Vendido el{' '}
+                {new Date(shipment.dateCreated).toLocaleString('es-CO', {
+                  day: '2-digit',
+                  month: 'short',
+                  hour: 'numeric',
+                  minute: '2-digit',
+                  timeZone: 'America/Bogota',
+                })}
+              </span>
+              <span className={`whitespace-nowrap text-sm font-semibold ${TIER_TEXT_STYLE[countdown.tier]}`}>
+                {TIER_ICON[countdown.tier]} {countdown.label}
+              </span>
+            </div>
+            {dispatchMessage && (
+              <p className={`mt-1 text-xs ${isOverdue ? 'font-medium text-red-700' : 'text-gray-500'}`}>
+                {dispatchMessage}
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -110,7 +121,7 @@ export function BodegaShipmentCard({
           rel="noopener noreferrer"
           className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
         >
-          Imprimir guía
+          {shipment.printed ? 'Reimprimir guía' : 'Imprimir guía'}
         </a>
         <button
           onClick={handleDeliver}

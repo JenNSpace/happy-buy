@@ -72,3 +72,7 @@ supabase/.temp
 # Forge — commit .forge/manifest.json (forge update needs it), ignore backups
 .forge/backups/
 .env*
+
+# Ruta temporal de revision visual de tarjetas: NO debe llegar a produccion
+# (no pide sesion, ver proxy.ts). Se borra cuando el diseno queda aprobado.
+/src/app/preview-tarjetas/
