@@ -6,10 +6,9 @@ Leer esto primero al retomar.
 
 | Bodega | Quincena | Total |
 |---|---|---|
-| Villa Del Rosario | 1–15 ago | $47.600 |
-| Villa Del Rosario | 16–31 ago | $37.200 |
-| Galerías | 16–31 ago + ajustes | $25.000 |
-| Galerías | 1–15 ago | $125.000 — **ya pagada** (25 paquetes, solo paquetes) |
+| Villa Del Rosario | pendiente | $12.800 (ya se le pagaron $78.000) |
+| Galerías | pendiente | $25.000 (3 paquetes + $10.000 de ajuste) |
+| Galerías | 1–15 ago | $120.000 — **ya pagada** (24 envíos, verificado contra su cuenta) |
 
 Gina cobró $78.000 y le corresponden **$84.800**: había olvidado anotar dos envíos (un Pack X3
 del 15-ago y una Multitoma del 18-ago) y sus dos etiquetas.
@@ -26,8 +25,8 @@ del 15-ago y una Multitoma del 18-ago) y sus dos etiquetas.
    se registró como +4 cuando debía ser +3 (el saldo previo era 21, no 20). Pendiente de que Jen
    cuente la repisa: si hay 19, se aplica −1; si hay 20, el conteo de Gina no incluía los
    paquetes ya empacados y el sistema está bien.
-2. ~~**El pago de Galerías quedó en $0.**~~ **RESUELTO el 2026-08-20.** Se corrigió a $125.000 /
-   25 paquetes. La causa quedó clara: el pago se marcó a las 12:30 pm del 18-ago y los 17 envíos
+2. ~~**El pago de Galerías quedó en $0.**~~ **RESUELTO el 2026-08-20.** Se corrigió a $120.000 /
+   24 envíos, verificado contra la cuenta de cobro de Daniel. La causa quedó clara: el pago se marcó a las 12:30 pm del 18-ago y los 17 envíos
    que faltaba asignarle a Daniel entraron al sistema a las 12:39 pm — nueve minutos después. El
    panel de cuenta corriente ahora muestra lo generado en el rango ANTES de guardar el pago,
    justo para que eso no se repita.
