@@ -4,12 +4,14 @@ import { getPendingShipmentsForAdmin } from '@/features/logistica/services/get-p
 import { getBodegaShipments } from '@/features/logistica/services/get-bodega-shipments'
 import { getDeliveredToday } from '@/features/logistica/services/get-delivered-today'
 import { getMyWarehouseEarningsThisMonth, getAllWarehouseEarningsThisMonth } from '@/features/logistica/services/get-warehouse-earnings'
+import { getAllWarehouseLedgers } from '@/features/logistica/services/get-warehouse-ledger'
 import { getPackingMap } from '@/features/inventario/services/get-product-catalog'
 import { AdminLogisticsBoard } from '@/features/logistica/components/AdminLogisticsBoard'
 import { BodegaShipmentCard } from '@/features/logistica/components/BodegaShipmentCard'
 import { DeliveredTodaySection } from '@/features/logistica/components/DeliveredTodaySection'
 import { WarehouseEarningsTable } from '@/features/logistica/components/WarehouseEarningsTable'
 import { AdminEarningsSummary } from '@/features/logistica/components/AdminEarningsSummary'
+import { WarehouseLedgerCard } from '@/features/logistica/components/WarehouseLedgerCard'
 import { UrgencyBanner } from '@/features/logistica/components/UrgencyBanner'
 import { AutoRefresh } from '@/features/logistica/components/AutoRefresh'
 import { UnassignedDispatchedAlert } from '@/features/logistica/components/UnassignedDispatchedAlert'
@@ -45,7 +47,7 @@ export default async function LogisticaPage() {
     // a warehouse, so the earnings and unassigned lists below see them.
     await syncDispatchedShipments()
 
-    const [shipments, { data: warehouses }, allEarnings, packing, unassigned, fullSummary] = await Promise.all([
+    const [shipments, { data: warehouses }, allEarnings, packing, unassigned, fullSummary, ledgers] = await Promise.all([
       getPendingShipmentsForAdmin(),
       // Full never gets packages assigned — ML dispatches it end to end.
       supabase.from('warehouses').select('*').eq('is_fulfillment', false).order('name'),
@@ -53,6 +55,7 @@ export default async function LogisticaPage() {
       getPackingMap(),
       getUnassignedDispatched(),
       getFullSummary(),
+      getAllWarehouseLedgers(),
     ])
 
     return (
@@ -61,6 +64,19 @@ export default async function LogisticaPage() {
         <h2 className="text-2xl font-bold text-gray-900">Logística</h2>
         <UnassignedDispatchedAlert rows={unassigned} warehouses={warehouses ?? []} />
         <AdminEarningsSummary earnings={allEarnings} />
+
+        {/* Cuenta corriente: generado − pagado = saldo. Las quincenas de arriba
+            siguen sirviendo para ver el detalle del período, pero la respuesta a
+            "¿cuánto le debo?" vive acá, y no depende de que la cuenta de cobro
+            respete los cortes del calendario. */}
+        <div>
+          <h3 className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500">Cuenta con cada bodega</h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            {ledgers.map((l) => (
+              <WarehouseLedgerCard key={l.warehouseId} ledger={l} />
+            ))}
+          </div>
+        </div>
         <AdminLogisticsBoard
           shipments={shipments}
           warehouses={warehouses ?? []}
