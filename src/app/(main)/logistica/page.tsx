@@ -3,13 +3,11 @@ import type { Profile } from '@/types/database'
 import { getPendingShipmentsForAdmin } from '@/features/logistica/services/get-pending-shipments'
 import { getBodegaShipments } from '@/features/logistica/services/get-bodega-shipments'
 import { getDeliveredToday } from '@/features/logistica/services/get-delivered-today'
-import { getMyWarehouseEarningsThisMonth } from '@/features/logistica/services/get-warehouse-earnings'
-import { getAllWarehouseLedgers } from '@/features/logistica/services/get-warehouse-ledger'
+import { getAllWarehouseLedgers, getMyWarehouseLedger } from '@/features/logistica/services/get-warehouse-ledger'
 import { getPackingMap } from '@/features/inventario/services/get-product-catalog'
 import { AdminLogisticsBoard } from '@/features/logistica/components/AdminLogisticsBoard'
 import { BodegaShipmentCard } from '@/features/logistica/components/BodegaShipmentCard'
 import { DeliveredTodaySection } from '@/features/logistica/components/DeliveredTodaySection'
-import { WarehouseEarningsTable } from '@/features/logistica/components/WarehouseEarningsTable'
 import { WarehouseLedgerCard } from '@/features/logistica/components/WarehouseLedgerCard'
 import { UrgencyBanner } from '@/features/logistica/components/UrgencyBanner'
 import { AutoRefresh } from '@/features/logistica/components/AutoRefresh'
@@ -91,7 +89,7 @@ export default async function LogisticaPage() {
   // run after that write lands, or they'd miss it on this exact page load.
   const shipments = await getBodegaShipments()
   const delivered = await getDeliveredToday()
-  const earnings = await getMyWarehouseEarningsThisMonth()
+  const ledger = await getMyWarehouseLedger()
   const packing = await getPackingMap()
   const name = profile?.full_name ?? 'de nuevo'
 
@@ -117,7 +115,15 @@ export default async function LogisticaPage() {
       )}
 
       <DeliveredTodaySection shipments={delivered} packing={packing} />
-      {earnings && <WarehouseEarningsTable earnings={earnings} />}
+      {/* La misma cuenta que ve la administradora, sin los botones. Que las dos
+          pantallas lean el mismo número es lo que evita las reconciliaciones a
+          mano que hubo que hacer tres veces en agosto. */}
+      {ledger && (
+        <div className="mt-8">
+          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-gray-500">Tu cuenta</h3>
+          <WarehouseLedgerCard ledger={ledger} readOnly />
+        </div>
+      )}
     </div>
   )
 }

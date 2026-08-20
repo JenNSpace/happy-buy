@@ -308,9 +308,7 @@ function StatementPanel({ ledger, onClose }: { ledger: WarehouseLedger; onClose:
             </div>
             {statement.adjustments.map((a, i) => (
               <div key={i} className="flex justify-between gap-3 text-gray-600">
-                <span className="min-w-0 truncate" title={a.note}>
-                  {a.note}
-                </span>
+                <span className="min-w-0 leading-snug">{a.note}</span>
                 <span className="whitespace-nowrap">{formatCOP(a.amount)}</span>
               </div>
             ))}
@@ -417,7 +415,20 @@ function AdjustmentForm({ warehouseId, onDone }: { warehouseId: string; onDone: 
   )
 }
 
-export function WarehouseLedgerCard({ ledger }: { ledger: WarehouseLedger }) {
+/**
+ * `readOnly` es la vista de la bodega: los MISMOS números que ve la
+ * administradora, sin los botones de registrar pago ni de borrar. Reusar el
+ * componente es deliberado — si fueran dos componentes distintos podrían
+ * mostrar cifras distintas, que es exactamente el problema que este panel
+ * existe para eliminar.
+ */
+export function WarehouseLedgerCard({
+  ledger,
+  readOnly = false,
+}: {
+  ledger: WarehouseLedger
+  readOnly?: boolean
+}) {
   const router = useRouter()
   const [showPayment, setShowPayment] = useState(false)
   const [showStatement, setShowStatement] = useState(false)
@@ -469,7 +480,9 @@ export function WarehouseLedgerCard({ ledger }: { ledger: WarehouseLedger }) {
       {/* El saldo es la respuesta a "¿cuánto le debo?", y es una sola sin
           importar por qué rango se haya cobrado. */}
       <div className="mt-2 flex items-baseline justify-between border-t-2 border-gray-200 pt-2">
-        <span className="text-sm font-semibold text-gray-700">{debe ? 'Le debemos' : 'Saldo'}</span>
+        <span className="text-sm font-semibold text-gray-700">
+          {debe ? (readOnly ? 'Te deben' : 'Le debemos') : 'Saldo'}
+        </span>
         {/* Neutro, no verde: en este dashboard el verde significa plata que ENTRA
             (convención acordada el 2026-08-18). Un saldo por pagar es plata que
             sale, y tampoco es un estado malo — es un hecho. El peso lo da el
@@ -484,6 +497,8 @@ export function WarehouseLedgerCard({ ledger }: { ledger: WarehouseLedger }) {
         </p>
       )}
 
+      {!readOnly && (
+        <>
       <div className="mt-3 flex gap-2">
         <button
           onClick={() => {
@@ -517,6 +532,8 @@ export function WarehouseLedgerCard({ ledger }: { ledger: WarehouseLedger }) {
       >
         + Agregar etiquetas o extras
       </button>
+      </>
+      )}
 
       {showPayment && <PaymentForm ledger={ledger} onDone={() => setShowPayment(false)} />}
       {showStatement && <StatementPanel ledger={ledger} onClose={() => setShowStatement(false)} />}
@@ -529,26 +546,26 @@ export function WarehouseLedgerCard({ ledger }: { ledger: WarehouseLedger }) {
           <p className="mb-1 text-[11px] font-medium text-gray-400">Etiquetas y extras</p>
           <div className="space-y-1">
             {ledger.adjustments.map((a) => (
-              <div key={a.id} className="flex items-start justify-between gap-2 text-xs">
+              <div key={a.id} className="flex items-start justify-between gap-3 text-xs">
                 <div className="min-w-0">
                   <span className="font-medium text-gray-700">{formatCOP(a.amount)}</span>
                   <span className="text-gray-400">{' · '}{fecha(`${a.date}T12:00:00-05:00`)}</span>
-                  <p className="truncate text-[11px] text-gray-400" title={a.note}>
-                    {a.note}
-                  </p>
+                  <p className="text-[11px] leading-snug text-gray-400">{a.note}</p>
                 </div>
-                <button
-                  onClick={async () => {
-                    setDeleting(a.id)
-                    await removeAdjustment(a.id)
-                    setDeleting(null)
-                    router.refresh()
-                  }}
-                  disabled={deleting === a.id}
-                  className="shrink-0 rounded px-2 py-1 text-[11px] text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                >
-                  {deleting === a.id ? '...' : 'Quitar'}
-                </button>
+                {!readOnly && (
+                  <button
+                    onClick={async () => {
+                      setDeleting(a.id)
+                      await removeAdjustment(a.id)
+                      setDeleting(null)
+                      router.refresh()
+                    }}
+                    disabled={deleting === a.id}
+                    className="shrink-0 rounded px-2 py-1 text-[11px] text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                  >
+                    {deleting === a.id ? '...' : 'Quitar'}
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -560,7 +577,7 @@ export function WarehouseLedgerCard({ ledger }: { ledger: WarehouseLedger }) {
           <p className="mb-1 text-[11px] font-medium text-gray-400">Pagos registrados</p>
           <div className="space-y-1">
             {ledger.payments.map((p) => (
-              <div key={p.id} className="flex items-center justify-between gap-2 text-xs">
+              <div key={p.id} className="flex items-start justify-between gap-3 text-xs">
                 <div className="min-w-0">
                   <span className="font-medium text-gray-700">{formatCOP(p.amount)}</span>
                   <span className="text-gray-400">
@@ -569,19 +586,17 @@ export function WarehouseLedgerCard({ ledger }: { ledger: WarehouseLedger }) {
                       ? `${fecha(`${p.periodStart}T12:00:00-05:00`)} al ${fecha(`${p.periodEnd}T12:00:00-05:00`)}`
                       : fecha(p.paidAt)}
                   </span>
-                  {p.note && (
-                    <p className="truncate text-[11px] text-gray-400" title={p.note}>
-                      {p.note}
-                    </p>
-                  )}
+                  {p.note && <p className="text-[11px] leading-snug text-gray-400">{p.note}</p>}
                 </div>
-                <button
-                  onClick={() => handleDelete(p.id)}
-                  disabled={deleting === p.id}
-                  className="shrink-0 rounded px-2 py-1 text-[11px] text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                >
-                  {deleting === p.id ? '...' : 'Deshacer'}
-                </button>
+                {!readOnly && (
+                  <button
+                    onClick={() => handleDelete(p.id)}
+                    disabled={deleting === p.id}
+                    className="shrink-0 rounded px-2 py-1 text-[11px] text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                  >
+                    {deleting === p.id ? '...' : 'Deshacer'}
+                  </button>
+                )}
               </div>
             ))}
           </div>

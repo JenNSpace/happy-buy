@@ -198,3 +198,39 @@ export async function getAllWarehouseLedgers(): Promise<WarehouseLedger[]> {
 
   return Promise.all((warehouses ?? []).map((w) => buildLedger(supabase, w)))
 }
+
+/**
+ * La cuenta de la bodega que está mirando la pantalla.
+ *
+ * Es el MISMO cálculo que ve la administradora — a propósito. Cuando la bodega
+ * y el sistema mostraban números distintos hubo que reconciliar a mano tres
+ * veces en agosto; que ambos lean la misma cuenta es lo que hace que una
+ * diferencia se note el mismo día y no dos semanas después.
+ *
+ * Las políticas RLS de `warehouse_payments` y `warehouse_adjustments` ya
+ * limitan cada bodega a lo suyo, así que no hace falta filtrar de nuevo acá.
+ */
+export async function getMyWarehouseLedger(): Promise<WarehouseLedger | null> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('warehouse_id')
+    .eq('id', user.id)
+    .single<{ warehouse_id: string | null }>()
+
+  if (!profile?.warehouse_id) return null
+
+  const { data: warehouse } = await supabase
+    .from('warehouses')
+    .select('id, name, fee_per_package_flex, fee_per_package_agencia')
+    .eq('id', profile.warehouse_id)
+    .single<WarehouseRow>()
+
+  if (!warehouse) return null
+  return buildLedger(supabase, warehouse)
+}
