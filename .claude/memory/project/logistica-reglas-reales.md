@@ -33,7 +33,9 @@ puede venir null y entonces se cobra al precio de agencia por defecto.
 Las cuentas de las bodegas no cuadraban con el sistema. Causa: **57 envíos despachados que
 nadie asignó** a ninguna bodega (no cuentan para el pago de nadie) y **6 envíos de agencia
 cargados a Gina que eran de Daniel**. Corregido: 8 Flex → Gina, 17 agencia → Daniel, 6 de
-Gina → Daniel. Tras eso Daniel cuadró **exacto** con su cuenta ($120.000 en la quincena 1-15).
+Gina → Daniel. Tras eso Daniel cuadró **exacto** con su cuenta: **$125.000 en la quincena 1-15, 25 paquetes,
+solo paquetes** (confirmado por Jen el 2026-08-20 — la cifra de $120.000 que circulaba en estas
+notas era incorrecta).
 
 **La pista que lo resolvió fue el monto, no la fecha:** a Daniel le faltaban exactamente 6
 envíos y a Gina le sobraban exactamente 6 de agencia.
