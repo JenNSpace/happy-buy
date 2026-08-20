@@ -21,6 +21,8 @@ export interface PendingShipment {
   deliveredAt: string | null
   /** 'unknown' = ML returned a substatus we can't classify; show it, flag it. */
   dispatchState: DispatchState
+  /** ML's own verdict ('on_time' | 'delayed'); null when ML didn't answer. */
+  slaStatus: string | null
 }
 
 export interface BodegaShipmentItem {
@@ -37,4 +39,6 @@ export interface BodegaShipment {
   fulfillmentType: FulfillmentType
   printed: boolean
   dispatchState: DispatchState
+  /** ML's own verdict ('on_time' | 'delayed'); null when ML didn't answer. */
+  slaStatus: string | null
 }

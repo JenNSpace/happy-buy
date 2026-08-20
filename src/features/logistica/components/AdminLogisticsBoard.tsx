@@ -8,6 +8,7 @@ import { FulfillmentBadge, FULFILLMENT_BORDER_STYLE, FULFILLMENT_CARD_BG } from 
 import { DispatchSummaryTiles } from './DispatchSummaryTiles'
 import { ProductLine } from './ProductLine'
 import { getDispatchMessage } from '../utils/dispatch-cutoff'
+import { affectsReputation } from '../utils/reputation'
 import { getCountdownInfo } from '../utils/countdown'
 import type { PendingShipment } from '../types'
 import type { FullSummary } from '../services/get-full-summary'
@@ -102,7 +103,9 @@ function ShipmentCard({
   }, [shipment.deadline])
 
   const isOverdue = countdown.tier === 'overdue'
-  const dispatchMessage = getDispatchMessage(shipment.fulfillmentType, isOverdue)
+  const dispatchMessage = getDispatchMessage(shipment.fulfillmentType, shipment.deadline, isOverdue)
+  // Solo ML sabe si esto le pega a la reputación — nuestro corte es más estricto a propósito.
+  const hurtsReputation = affectsReputation(shipment.slaStatus)
 
   async function handleChange(nextWarehouseId: string) {
     const previous = warehouseId
@@ -168,9 +171,11 @@ function ShipmentCard({
           {dispatchMessage}
         </p>
       )}
-      <p className={`mb-3 text-[11px] ${isOverdue ? 'font-semibold text-red-600' : 'text-gray-400'}`}>
-        {isOverdue ? '⚠ Afecta tu reputación' : 'No afecta tu reputación'}
-      </p>
+      {hurtsReputation !== null && (
+        <p className={`mb-3 text-[11px] ${hurtsReputation ? 'font-semibold text-red-600' : 'text-gray-400'}`}>
+          {hurtsReputation ? '⚠ Afecta tu reputación' : 'No afecta tu reputación'}
+        </p>
+      )}
 
       <div className="flex items-center gap-2">
         <select

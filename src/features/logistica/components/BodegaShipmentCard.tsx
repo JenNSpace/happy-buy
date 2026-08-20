@@ -51,7 +51,7 @@ export function BodegaShipmentCard({
   if (delivered) return null
 
   const isOverdue = countdown.tier === 'overdue'
-  const dispatchMessage = getDispatchMessage(shipment.fulfillmentType, isOverdue)
+  const dispatchMessage = getDispatchMessage(shipment.fulfillmentType, shipment.deadline, isOverdue)
 
   return (
     <div

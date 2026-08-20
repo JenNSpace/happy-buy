@@ -10,6 +10,7 @@ import {
   type MlShipmentCore,
 } from './parse-shipment'
 import { syncAutoDelivered } from './sync-delivered'
+import { getShipmentSla } from './get-shipment-sla'
 import { getDispatchCutoff } from '../utils/dispatch-cutoff'
 import type { Shipment } from '@/types/database'
 import type { PendingShipment } from '../types'
@@ -117,7 +118,10 @@ export async function getPendingShipmentsForAdmin(): Promise<PendingShipment[]> 
   const details = await Promise.all(
     ordersWithShipping.map((order) => mlGet<MlShipmentDetails>(`/shipments/${order.shipping.id}`))
   )
-  const enriched = ordersWithShipping.map((order, i) => ({ order, details: details[i] }))
+  // ML's own dispatch clock per shipment — the day a package is due is ML's to
+  // decide (business days, holidays, cutoff), not ours. See `getDispatchCutoff`.
+  const slas = await Promise.all(ordersWithShipping.map((order) => getShipmentSla(order.shipping.id)))
+  const enriched = ordersWithShipping.map((order, i) => ({ order, details: details[i], sla: slas[i] }))
 
   const supabase = await createClient()
   const { data: localShipments } = await supabase.from('shipments').select('*')
@@ -139,14 +143,15 @@ export async function getPendingShipmentsForAdmin(): Promise<PendingShipment[]> 
 
   return enriched
     .filter(({ details }) => needsDispatch(details))
-    .map(({ order, details }) => {
+    .map(({ order, details, sla }) => {
       const local = localById.get(order.shipping.id)
       const fulfillmentType = getFulfillmentType(details)
       return {
         shipmentId: order.shipping.id,
         orderId: order.id,
         dateCreated: order.date_created,
-        deadline: getDispatchCutoff(fulfillmentType),
+        deadline: getDispatchCutoff(fulfillmentType, sla.expectedDate),
+        slaStatus: sla.status,
         fulfillmentType,
         printed: isLabelPrinted(details),
         buyerNickname: order.buyer.nickname,

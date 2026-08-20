@@ -10,6 +10,7 @@ import {
 } from './parse-shipment'
 import { syncAutoDelivered } from './sync-delivered'
 import { getDispatchCutoff } from '../utils/dispatch-cutoff'
+import { getShipmentSla } from './get-shipment-sla'
 import type { BodegaShipment } from '../types'
 
 interface MlShipmentItem {
@@ -28,9 +29,9 @@ interface MlShipment extends MlShipmentCore {
 /**
  * Bodega view: RLS on `shipments` already limits this to the caller's own
  * warehouse, so we only need the shipment ids we're allowed to see, then
- * pull the live details (product, address) from ML. The deadline is our
- * own dispatch cutoff (see `getDispatchCutoff`) — not a per-shipment ML
- * value, since our job ends at hand-off to the carrier.
+ * pull the live details (product, address) from ML. The deadline mixes both:
+ * ML decides the DAY (its `/sla`), we impose the HOUR, since our job ends at
+ * hand-off to the carrier rather than at delivery (see `getDispatchCutoff`).
  *
  * Also drops anything ML's own `status` says is already `shipped` (or
  * later) even if our local `delivered_at` is still null — e.g. if
@@ -67,7 +68,11 @@ export async function getBodegaShipments(): Promise<BodegaShipment[]> {
     )
   )
 
-  const shipments: BodegaShipment[] = stillPending.map((shipment) => {
+  // ML's own dispatch clock per shipment — see `getDispatchCutoff` for why the
+  // day has to come from ML rather than from our own arithmetic.
+  const slas = await Promise.all(stillPending.map((shipment) => getShipmentSla(shipment.id)))
+
+  const shipments: BodegaShipment[] = stillPending.map((shipment, index) => {
     const fulfillmentType = getFulfillmentType(shipment)
     return {
       shipmentId: shipment.id,
@@ -75,7 +80,8 @@ export async function getBodegaShipments(): Promise<BodegaShipment[]> {
       address: [shipment.receiver_address.address_line, shipment.receiver_address.city?.name]
         .filter(Boolean)
         .join(', '),
-      deadline: getDispatchCutoff(fulfillmentType),
+      deadline: getDispatchCutoff(fulfillmentType, slas[index].expectedDate),
+      slaStatus: slas[index].status,
       fulfillmentType,
       printed: isLabelPrinted(shipment),
       dispatchState: getDispatchState(shipment),
