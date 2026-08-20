@@ -11,7 +11,7 @@ import { useRouter } from 'next/navigation'
  * twice. Pauses while the tab is hidden so it doesn't burn ML API calls in a
  * background tab, and refreshes immediately on becoming visible again.
  */
-export function AutoRefresh({ intervalMs = 60_000 }: { intervalMs?: number }) {
+export function AutoRefresh({ intervalMs = 120_000 }: { intervalMs?: number }) {
   const router = useRouter()
 
   useEffect(() => {

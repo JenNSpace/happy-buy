@@ -33,8 +33,22 @@ async function getAccessToken(): Promise<string> {
  * el límite es de ML y no depende solo de nosotros. Espera y reintenta: un
  * segundo de demora es mejor que una pantalla en blanco.
  */
-const RATE_LIMIT_RETRIES = 3
-const RATE_LIMIT_BASE_DELAY_MS = 400
+const RATE_LIMIT_RETRIES = 4
+const RATE_LIMIT_BASE_DELAY_MS = 1000
+
+/**
+ * Cuántos segundos puede reusarse una respuesta de ML.
+ *
+ * La pantalla de logística se auto-refresca sola, y encima se recarga a mano,
+ * se abre en varias pestañas y reintenta cuando falla. Sin esto, cada una de
+ * esas cargas era una tanda nueva de llamadas y ML terminaba respondiendo 429
+ * `local_rate_limited` (pasó dos veces el 2026-08-20).
+ *
+ * 20 segundos es el punto medio: corta las ráfagas sin volver la pantalla
+ * mentirosa. El riesgo real de datos viejos es que un paquete que la bodega ya
+ * despachó siga apareciendo y alguien lo mande dos veces — por eso no más.
+ */
+const ML_CACHE_SECONDS = 20
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -47,14 +61,19 @@ export async function mlGet<T>(path: string, extraHeaders?: Record<string, strin
         Authorization: `Bearer ${token}`,
         ...extraHeaders,
       },
-      // Ads endpoint is slow (~25-30s); orders/items are fast. Cache at the page level instead.
-      cache: 'no-store',
+      // `force-cache` es obligatorio, no decorativo: la doc de Next 16 dice que
+      // el cacheo es opt-in y que una petición con header `Authorization` —como
+      // todas las nuestras— solo se cachea si se pide explícitamente. Con
+      // `revalidate` a secas no se guardaba nada y el 429 volvía igual.
+      cache: 'force-cache',
+      next: { revalidate: ML_CACHE_SECONDS },
     })
 
     if (res.ok) return res.json() as Promise<T>
 
-    // Espera creciente y reintenta; cualquier otro error falla de una, que es
-    // lo correcto: un 404 no mejora esperando.
+    // Espera creciente (1s, 2s, 4s, 8s) y reintenta. La ventana del límite de
+    // ML dura más que unos milisegundos: con esperas cortas se agotaban los
+    // reintentos y la pantalla se caía igual.
     if (res.status === 429 && attempt < RATE_LIMIT_RETRIES) {
       await sleep(RATE_LIMIT_BASE_DELAY_MS * 2 ** attempt)
       continue
