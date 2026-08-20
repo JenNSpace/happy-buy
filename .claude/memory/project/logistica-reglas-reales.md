@@ -119,3 +119,29 @@ endpoint que da la respuesta. Buscarlo antes de deducir la regla. Ver
 **De paso, dos mensajes que mentían a las 10 de la noche:** "el transportista pasa hoy a la 1 pm"
 y "despáchalo ya" con la agencia cerrada. Y un pedido de viernes en la noche ahora dice "el
 lunes", no "mañana".
+
+## Dos relojes distintos: el nuestro y el de ML (2026-08-20)
+
+Nuestro corte (Flex 1 pm, agencia 5 pm) es **más estricto a propósito** que el de ML (23:00 y
+17:00): mide alcanzar al transportista, no la promesa de entrega al comprador. De ahí se sigue
+una regla que costó una corrección de Jen:
+
+**Pasarse de NUESTRO corte no es una alarma.** Significa "sale en la próxima ronda". Jen lo vio
+así: *"dice que ya no pasa hoy pero aun así está en alerta rojo cuando no debería ser una alerta
+porque sí pasan mañana"*. La tarjeta se contradecía sola — el texto decía que nadie podía hacer
+nada hoy y el color pedía actuar ya.
+
+| Señal | Quién la decide | Cómo se ve |
+|---|---|---|
+| Falta poco para el corte | nuestro reloj | ámbar / rojo, caja de color |
+| Ya pasó nuestro corte | nuestro reloj | **gris**, "Sale en la próxima ronda", sin caja |
+| El envío está atrasado | **`sla.status` de ML** | rojo + "⚠ Afecta tu reputación" |
+
+Si ML no responde, se cae a comparar el día: un plazo que quedó en un día anterior sí es un
+paquete estancado. Ver `isLateForMl` en `get-shipment-sla.ts` y el tier `next_round` en
+`countdown.ts`.
+
+**Lección más general, y van dos veces con el mismo tema:** una alarma que aparece cuando no hay
+nada que hacer se vuelve ruido, y entonces la alarma de verdad no se ve. Ya había pasado en el
+dashboard con ocho filas rojas. Antes de pintar algo de rojo, preguntarse **qué acción concreta
+puede tomar quien lo ve en este momento**; si la respuesta es "ninguna hasta mañana", no es rojo.
