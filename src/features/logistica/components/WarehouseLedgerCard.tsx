@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { formatCOP } from '@/shared/utils/format'
 import { previewRange, registerPayment, deletePayment, loadStatement } from '../services/ledger-actions'
+import { addAdjustment, removeAdjustment } from '../services/payment-actions'
 import type { WarehouseLedger } from '../services/get-warehouse-ledger'
 import type { BillingStatement } from '../services/get-billing-statement'
 
@@ -324,10 +325,103 @@ function StatementPanel({ ledger, onClose }: { ledger: WarehouseLedger; onClose:
   )
 }
 
+/**
+ * Etiquetas, extras y correcciones. Vivía en el panel de quincenas; al quitarlo
+ * se muda acá, porque sin esto no habría forma de cobrar lo que no es un
+ * paquete despachado — y las etiquetas son plata real (Gina cobró $13.800 de
+ * etiquetas en agosto).
+ *
+ * La fecha ya no es un cajón: se guarda tal cual para que la cuenta de cobro de
+ * un rango recoja los ajustes que caen dentro.
+ */
+function AdjustmentForm({ warehouseId, onDone }: { warehouseId: string; onDone: () => void }) {
+  const router = useRouter()
+  const [amount, setAmount] = useState('')
+  const [note, setNote] = useState('')
+  const [date, setDate] = useState(hoyBogota())
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setSaving(true)
+    setError(null)
+
+    const result = await addAdjustment({
+      warehouseId,
+      periodStart: date,
+      packagesDelta: 0,
+      amountDelta: Number(amount || 0),
+      note,
+    })
+
+    setSaving(false)
+    if (result?.error) {
+      setError(result.error)
+      return
+    }
+    router.refresh()
+    onDone()
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-3 space-y-3 rounded-lg bg-gray-50 p-3">
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[11px] text-gray-500">Fecha</label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm"
+          />
+        </div>
+        <div>
+          {/* Acepta negativos: un ajuste es tan seguido un descuento o algo
+              contado dos veces como un extra. */}
+          <label className="text-[11px] text-gray-500">Monto (+ o −)</label>
+          <input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0"
+            className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm"
+          />
+        </div>
+      </div>
+      <input
+        type="text"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="¿De qué es? Ej: impresión de etiquetas, stickers, descuento..."
+        className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm"
+      />
+      {error && <p className="text-xs text-red-600">{error}</p>}
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={saving || !amount || !note.trim()}
+          className="flex-1 rounded-md bg-happy-green px-3 py-2 text-sm font-medium text-white hover:bg-happy-greenDark disabled:opacity-50"
+        >
+          {saving ? 'Guardando...' : 'Agregar'}
+        </button>
+        <button
+          type="button"
+          onClick={onDone}
+          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-600"
+        >
+          Cancelar
+        </button>
+      </div>
+    </form>
+  )
+}
+
 export function WarehouseLedgerCard({ ledger }: { ledger: WarehouseLedger }) {
   const router = useRouter()
   const [showPayment, setShowPayment] = useState(false)
   const [showStatement, setShowStatement] = useState(false)
+  const [showAdjustment, setShowAdjustment] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
 
   async function handleDelete(id: string) {
@@ -395,6 +489,7 @@ export function WarehouseLedgerCard({ ledger }: { ledger: WarehouseLedger }) {
           onClick={() => {
             setShowPayment((v) => !v)
             setShowStatement(false)
+            setShowAdjustment(false)
           }}
           className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
         >
@@ -404,6 +499,7 @@ export function WarehouseLedgerCard({ ledger }: { ledger: WarehouseLedger }) {
           onClick={() => {
             setShowStatement((v) => !v)
             setShowPayment(false)
+            setShowAdjustment(false)
           }}
           className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
         >
@@ -411,8 +507,53 @@ export function WarehouseLedgerCard({ ledger }: { ledger: WarehouseLedger }) {
         </button>
       </div>
 
+      <button
+        onClick={() => {
+          setShowAdjustment((v) => !v)
+          setShowPayment(false)
+          setShowStatement(false)
+        }}
+        className="mt-2 text-xs text-happy-greenText hover:underline"
+      >
+        + Agregar etiquetas o extras
+      </button>
+
       {showPayment && <PaymentForm ledger={ledger} onDone={() => setShowPayment(false)} />}
       {showStatement && <StatementPanel ledger={ledger} onClose={() => setShowStatement(false)} />}
+      {showAdjustment && (
+        <AdjustmentForm warehouseId={ledger.warehouseId} onDone={() => setShowAdjustment(false)} />
+      )}
+
+      {ledger.adjustments.length > 0 && (
+        <div className="mt-3 border-t border-gray-100 pt-2">
+          <p className="mb-1 text-[11px] font-medium text-gray-400">Etiquetas y extras</p>
+          <div className="space-y-1">
+            {ledger.adjustments.map((a) => (
+              <div key={a.id} className="flex items-start justify-between gap-2 text-xs">
+                <div className="min-w-0">
+                  <span className="font-medium text-gray-700">{formatCOP(a.amount)}</span>
+                  <span className="text-gray-400">{' · '}{fecha(`${a.date}T12:00:00-05:00`)}</span>
+                  <p className="truncate text-[11px] text-gray-400" title={a.note}>
+                    {a.note}
+                  </p>
+                </div>
+                <button
+                  onClick={async () => {
+                    setDeleting(a.id)
+                    await removeAdjustment(a.id)
+                    setDeleting(null)
+                    router.refresh()
+                  }}
+                  disabled={deleting === a.id}
+                  className="shrink-0 rounded px-2 py-1 text-[11px] text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                >
+                  {deleting === a.id ? '...' : 'Quitar'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {ledger.payments.length > 0 && (
         <div className="mt-3 border-t border-gray-100 pt-2">
