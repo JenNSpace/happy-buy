@@ -307,22 +307,41 @@ function StatementPanel({ ledger, onClose }: { ledger: WarehouseLedger; onClose:
             </table>
           )}
 
-          <div className="mt-2 space-y-1 border-t border-gray-200 pt-2 text-xs">
-            <div className="flex justify-between text-gray-600">
-              <span>
-                {statement.packagesTotal} paquete{statement.packagesTotal === 1 ? '' : 's'}
+          {/* Los totales necesitan estructura propia: con la nota de un ajuste
+              corriendo tres renglones al mismo nivel que "6 paquetes", no se
+              distinguía qué era una línea de la cuenta y qué una explicación
+              (lo reportó la usuaria el 2026-08-20). Cada ajuste va ahora en su
+              propia caja, con el monto arriba a la derecha y la nota debajo,
+              claramente subordinada. */}
+          <div className="mt-3 border-t border-gray-200 pt-3 text-xs">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="text-gray-600">
+                {statement.packagesTotal} paquete{statement.packagesTotal === 1 ? '' : 's'} despachado
+                {statement.packagesTotal === 1 ? '' : 's'}
               </span>
-              <span>{formatCOP(statement.packagesAmount)}</span>
+              <span className="whitespace-nowrap font-medium text-gray-900">
+                {formatCOP(statement.packagesAmount)}
+              </span>
             </div>
-            {statement.adjustments.map((a, i) => (
-              <div key={i} className="flex justify-between gap-3 text-gray-600">
-                <span className="min-w-0 leading-snug">{a.note}</span>
-                <span className="whitespace-nowrap">{formatCOP(a.amount)}</span>
+
+            {statement.adjustments.length > 0 && (
+              <div className="mt-3 space-y-2">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">Otros conceptos</p>
+                {statement.adjustments.map((a, i) => (
+                  <div key={i} className="rounded-md bg-gray-50 p-2">
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="font-medium text-gray-700">Ajuste</span>
+                      <span className="whitespace-nowrap font-medium text-gray-900">{formatCOP(a.amount)}</span>
+                    </div>
+                    <p className="mt-1 text-[11px] leading-snug text-gray-500">{a.note}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-            <div className="flex justify-between border-t border-gray-200 pt-1 text-sm font-bold text-gray-900">
-              <span>Total</span>
-              <span>{formatCOP(statement.total)}</span>
+            )}
+
+            <div className="mt-3 flex items-baseline justify-between gap-3 border-t-2 border-gray-300 pt-2">
+              <span className="text-sm font-bold text-gray-900">Total</span>
+              <span className="text-base font-bold text-gray-900">{formatCOP(statement.total)}</span>
             </div>
           </div>
         </div>
