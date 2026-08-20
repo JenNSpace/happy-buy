@@ -33,8 +33,14 @@ puede venir null y entonces se cobra al precio de agencia por defecto.
 Las cuentas de las bodegas no cuadraban con el sistema. Causa: **57 envíos despachados que
 nadie asignó** a ninguna bodega (no cuentan para el pago de nadie) y **6 envíos de agencia
 cargados a Gina que eran de Daniel**. Corregido: 8 Flex → Gina, 17 agencia → Daniel, 6 de
-Gina → Daniel. Tras eso Daniel cuadró **exacto** con su cuenta: **$120.000, 24 envíos**, verificado el
-2026-08-20 contra su cuenta de cobro real (2+4+1+7+3+3+4 = 24 envíos a $5.000).
+Gina → Daniel. Tras eso Daniel cuadró **exacto** con su cuenta: su cuenta de cobro son **24 envíos = $120.000**
+(2+4+1+7+3+3+4, del 31/07 al 13/08), y Enrique le pagó **$125.000** — los $5.000 de más son una
+Sal que salió la noche del 13-ago junto con unas Multi Tomas y que Daniel no alcanzó a anotar.
+Ese envío SÍ está en el sistema (envío 47756002876, 13-ago 11:16 p. m.), así que pagarlo aparte
+no duplicó nada. Todo verificado el 2026-08-20.
+
+**Otra vez el mismo patrón:** al cuaderno de la bodega se le escapan envíos que salen *fuera del
+lote* —tarde en la noche, junto a otro despacho—. Le pasó a Gina con dos y a Daniel con uno.
 
 **Y ese cotejo confirmó la regla del desfase de fechas.** Su cuenta va del 31/07 al 13/08; el
 sistema tiene esos mismos 24 paquetes entre el 5 y el 15 de agosto. Al reagrupar por día real de
