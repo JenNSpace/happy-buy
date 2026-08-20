@@ -115,20 +115,32 @@ export async function getPendingShipmentsForAdmin(): Promise<PendingShipment[]> 
 
   const ordersWithShipping = orders.filter((order) => order.shipping?.id)
 
-  const details = await Promise.all(
-    ordersWithShipping.map((order) => mlGet<MlShipmentDetails>(`/shipments/${order.shipping.id}`))
-  )
-  // ML's own dispatch clock per shipment — the day a package is due is ML's to
-  // decide (business days, holidays, cutoff), not ours. See `getDispatchCutoff`.
-  const slas = await Promise.all(ordersWithShipping.map((order) => getShipmentSla(order.shipping.id)))
-  const enriched = ordersWithShipping.map((order, i) => ({ order, details: details[i], sla: slas[i] }))
-
   const supabase = await createClient()
   const { data: localShipments } = await supabase.from('shipments').select('*')
   const localById = new Map<number, Shipment>((localShipments ?? []).map((s) => [s.id, s as Shipment]))
 
+  /**
+   * **Solo se le pregunta a ML por lo que todavía puede estar pendiente.**
+   *
+   * La búsqueda por `not_delivered` trae un mes entero de órdenes, y consultar
+   * el detalle de todas en cada carga costaba ~50 llamadas — multiplicado por el
+   * auto-refresh de cada minuto y por dos personas con la pantalla abierta,
+   * suficiente para que Mercado Libre respondiera 429 `local_rate_limited`
+   * (ocurrió de verdad el 2026-08-20).
+   *
+   * Un envío que ya tiene `delivered_at` local está despachado y se filtra al
+   * final de todas formas, y `syncAutoDelivered` no tendría nada que hacer con
+   * él: preguntarle a ML por ese es gasto puro.
+   */
+  const ordersToCheck = ordersWithShipping.filter((order) => !localById.get(order.shipping.id)?.delivered_at)
+
+  const details = await Promise.all(
+    ordersToCheck.map((order) => mlGet<MlShipmentDetails>(`/shipments/${order.shipping.id}`))
+  )
+  const enrichedAll = ordersToCheck.map((order, i) => ({ order, details: details[i] }))
+
   await Promise.all(
-    enriched
+    enrichedAll
       .filter(({ details }) => !needsDispatch(details))
       .map(({ order, details }) =>
         syncAutoDelivered(
@@ -141,9 +153,14 @@ export async function getPendingShipmentsForAdmin(): Promise<PendingShipment[]> 
       )
   )
 
-  return enriched
-    .filter(({ details }) => needsDispatch(details))
-    .map(({ order, details, sla }) => {
+  // El reloj de despacho de ML, y SOLO para los que siguen pendientes: pedirlo
+  // para todo el mes era duplicar el gasto de llamadas sin usarlo.
+  const stillPending = enrichedAll.filter(({ details }) => needsDispatch(details))
+  const slas = await Promise.all(stillPending.map(({ order }) => getShipmentSla(order.shipping.id)))
+
+  return stillPending
+    .map(({ order, details }, i) => {
+      const sla = slas[i]
       const local = localById.get(order.shipping.id)
       const fulfillmentType = getFulfillmentType(details)
       return {

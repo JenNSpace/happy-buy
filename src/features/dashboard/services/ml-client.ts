@@ -23,24 +23,46 @@ async function getAccessToken(): Promise<string> {
   return data.access_token
 }
 
+/**
+ * Mercado Libre responde 429 `local_rate_limited` cuando se le piden demasiadas
+ * cosas seguidas. Pasó de verdad el 2026-08-20: la pantalla de logística se
+ * auto-refresca cada minuto y con dos personas mirándola tumbó la página entera.
+ *
+ * La causa de fondo (pedir el detalle de un mes de órdenes en cada carga) se
+ * arregló en `getPendingShipmentsForAdmin`; esto es la red de seguridad, porque
+ * el límite es de ML y no depende solo de nosotros. Espera y reintenta: un
+ * segundo de demora es mejor que una pantalla en blanco.
+ */
+const RATE_LIMIT_RETRIES = 3
+const RATE_LIMIT_BASE_DELAY_MS = 400
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
 export async function mlGet<T>(path: string, extraHeaders?: Record<string, string>): Promise<T> {
   const token = await getAccessToken()
 
-  const res = await fetch(`https://api.mercadolibre.com${path}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...extraHeaders,
-    },
-    // Ads endpoint is slow (~25-30s); orders/items are fast. Cache at the page level instead.
-    cache: 'no-store',
-  })
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(`https://api.mercadolibre.com${path}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...extraHeaders,
+      },
+      // Ads endpoint is slow (~25-30s); orders/items are fast. Cache at the page level instead.
+      cache: 'no-store',
+    })
 
-  if (!res.ok) {
+    if (res.ok) return res.json() as Promise<T>
+
+    // Espera creciente y reintenta; cualquier otro error falla de una, que es
+    // lo correcto: un 404 no mejora esperando.
+    if (res.status === 429 && attempt < RATE_LIMIT_RETRIES) {
+      await sleep(RATE_LIMIT_BASE_DELAY_MS * 2 ** attempt)
+      continue
+    }
+
     const body = await res.text()
     throw new Error(`ML API ${path} -> ${res.status}: ${body}`)
   }
-
-  return res.json() as Promise<T>
 }
 
 /**
