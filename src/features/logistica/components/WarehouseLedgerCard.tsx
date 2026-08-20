@@ -448,8 +448,15 @@ export function WarehouseLedgerCard({
     <div className="rounded-xl border border-gray-200 bg-white p-4">
       <div className="mb-3 flex items-start justify-between gap-2">
         <h4 className="text-sm font-bold uppercase tracking-wide text-gray-700">{ledger.warehouseName}</h4>
+        {/* Solo se separan las dos tarifas cuando de verdad son distintas.
+            Galerías cobra lo mismo por los dos canales y ademas NUNCA hace Flex
+            (regla firme del negocio: solo Gina hace Flex), asi que anunciar
+            "Flex $5.000" ahi era informacion falsa — lo noto la usuaria el
+            2026-08-20. */}
         <span className="text-[11px] text-gray-400">
-          Flex {formatCOP(ledger.feePerPackageFlex)} · Agencia {formatCOP(ledger.feePerPackageAgencia)}
+          {ledger.feePerPackageFlex === ledger.feePerPackageAgencia
+            ? `${formatCOP(ledger.feePerPackageAgencia)} por paquete`
+            : `Flex ${formatCOP(ledger.feePerPackageFlex)} · Agencia ${formatCOP(ledger.feePerPackageAgencia)}`}
         </span>
       </div>
 
