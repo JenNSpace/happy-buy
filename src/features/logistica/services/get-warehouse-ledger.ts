@@ -62,8 +62,18 @@ export interface WarehouseLedger {
   /** Paquetes despachados después del último pago: los que sí se deben. */
   pendingPackages: number
   pendingAmount: number
-  /** Etiquetas y extras posteriores al último pago. */
+  /** Etiquetas y extras posteriores al último pago, ya netos de lo saldado. */
   pendingAdjustments: number
+  /**
+   * Los conceptos pendientes UNO POR UNO, no un total opaco.
+   *
+   * Un número agregado no se puede verificar: la usuaria vio "Otros conceptos
+   * $20.000" y no tenía forma de saber qué había adentro (2026-08-21). Cada
+   * línea de plata tiene que poder rastrearse hasta su origen.
+   */
+  pendingAdjustmentItems: LedgerAdjustment[]
+  /** Pagos de un concepto suelto dentro del período pendiente — se restan arriba. */
+  settledConcepts: { id: string; paidAt: string; amount: number }[]
   /**
    * Lo que quedó debiéndose de un período YA cobrado — cuando el pago fue menor
    * que lo generado en ese rango. A Gina le pasó: cobró $78.000 cuando había
@@ -252,12 +262,20 @@ async function buildLedger(
   const totalPaid = (payments ?? []).reduce((sum, p) => sum + Number(p.amount), 0)
   const balance = totalGenerated - totalPaid
 
-  // Hasta dónde llega lo ya cobrado. Lo despachado después es pendiente puro.
+  /**
+   * Hasta dónde llega lo ya cobrado. Lo despachado después es pendiente puro.
+   *
+   * **Solo cuentan los pagos que cubren un período** (más de un día). Un pago de
+   * un concepto suelto se registra en un solo día y NO mueve la cobertura: si lo
+   * hiciera, pagar $10.000 de etiquetas un día 20 haría ver como saldados todos
+   * los paquetes hasta esa fecha. Pasó de verdad el 2026-08-21.
+   */
   const coveredThrough =
-    (payments ?? []).reduce<string | null>(
-      (max, p) => (p.period_end && (!max || p.period_end > max) ? p.period_end : max),
-      null
-    ) ?? null
+    (payments ?? []).reduce<string | null>((max, p) => {
+      if (!p.period_start || !p.period_end) return max
+      if (p.period_start === p.period_end) return max
+      return !max || p.period_end > max ? p.period_end : max
+    }, null) ?? null
 
   const esPosterior = (fecha: string) =>
     !coveredThrough || fecha.slice(0, 10) > coveredThrough
@@ -266,9 +284,25 @@ async function buildLedger(
     ? rows.filter((s) => bogotaDay(s.delivered_at) > coveredThrough)
     : rows
   const pendingAmount = pendientes.reduce((sum, s) => sum + feeFor(s.fulfillment_type, fees), 0)
-  const pendingAdjustments = (adjustments ?? [])
+  /**
+   * Los conceptos sueltos que faltan por pagar.
+   *
+   * A los ajustes posteriores al período cobrado se les restan los pagos de un
+   * solo día que caen ahí: esos saldan un concepto, no un período. Sin esto,
+   * Enrique pagaba $10.000 de etiquetas y la tarjeta seguía cobrándolos, porque
+   * el ajuste contaba como pendiente y el pago solo bajaba el total.
+   */
+  const settledConcepts = (payments ?? [])
+    .filter((p) => p.period_start && p.period_start === p.period_end && esPosterior(p.period_start))
+    .map((p) => ({ id: p.id, paidAt: p.paid_at, amount: Number(p.amount) }))
+  const conceptosPagados = settledConcepts.reduce((sum, p) => sum + p.amount, 0)
+
+  const pendingAdjustmentItems = (adjustments ?? [])
     .filter((a) => esPosterior(a.period_start))
-    .reduce((sum, a) => sum + Number(a.amount_delta), 0)
+    .map((a) => ({ id: a.id, amount: Number(a.amount_delta), note: a.note, date: a.period_start }))
+
+  const pendingAdjustments =
+    pendingAdjustmentItems.reduce((sum, a) => sum + a.amount, 0) - conceptosPagados
 
   return {
     warehouseId: w.id,
@@ -285,6 +319,8 @@ async function buildLedger(
     pendingPackages: pendientes.length,
     pendingAmount,
     pendingAdjustments,
+    pendingAdjustmentItems,
+    settledConcepts,
     // Por diferencia, para que las tres partes SIEMPRE sumen el saldo aunque
     // haya varios pagos con rangos que se solapen.
     shortfall: balance - pendingAmount - pendingAdjustments,

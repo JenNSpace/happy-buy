@@ -122,6 +122,13 @@ function PaymentForm({ ledger, onDone }: { ledger: WarehouseLedger; onDone: () =
         </div>
       </div>
 
+      {/* El rango no es decorativo: define qué queda saldado. Estirarlo de más
+          hace ver como pagados paquetes que siguen pendientes. */}
+      <p className="text-[11px] leading-snug text-gray-400">
+        El rango define qué queda saldado. Si el pago es de un concepto suelto y no de un período,
+        ponlo en el mismo día para no tapar paquetes que siguen pendientes.
+      </p>
+
       <button
         type="button"
         onClick={verificar}
@@ -141,7 +148,7 @@ function PaymentForm({ ledger, onDone }: { ledger: WarehouseLedger; onDone: () =
             <span className="font-semibold text-gray-900">{formatCOP(generated.amount)}</span>
           </div>
           <p className="mt-1 text-[11px] text-gray-400">
-            No incluye etiquetas ni extras — esos van como ajuste y se suman al saldo.
+            Solo paquetes. Etiquetas, extras y correcciones van como ajuste y se suman aparte.
           </p>
         </div>
       )}
@@ -565,12 +572,24 @@ export function WarehouseLedgerCard({
           </span>
           <span>{formatCOP(ledger.pendingAmount)}</span>
         </div>
-        {ledger.pendingAdjustments !== 0 && (
-          <div className="flex justify-between text-gray-600">
-            <span>Etiquetas y extras</span>
-            <span>{formatCOP(ledger.pendingAdjustments)}</span>
+        {/* Cada concepto por separado, con su nota. Un total agregado no se puede
+            verificar: la usuaria vio "Otros conceptos $20.000" sin forma de
+            saber qué había adentro. */}
+        {ledger.pendingAdjustmentItems.map((a) => (
+          <div key={a.id} className="flex items-baseline justify-between gap-3 text-gray-600">
+            <span className="min-w-0 leading-snug">
+              {a.note}
+              <span className="text-gray-400">{' · '}{fecha(`${a.date}T12:00:00-05:00`)}</span>
+            </span>
+            <span className="whitespace-nowrap">{formatCOP(a.amount)}</span>
           </div>
-        )}
+        ))}
+        {ledger.settledConcepts.map((c) => (
+          <div key={c.id} className="flex items-baseline justify-between gap-3 text-happy-greenText">
+            <span>Ya pagado el {fecha(c.paidAt)}</span>
+            <span className="whitespace-nowrap">−{formatCOP(c.amount)}</span>
+          </div>
+        ))}
       </div>
 
       {/* El saldo es la respuesta a "¿cuánto le debo?", y es una sola sin
@@ -626,7 +645,7 @@ export function WarehouseLedgerCard({
         }}
         className="mt-2 text-xs text-happy-greenText hover:underline"
       >
-        + Agregar etiquetas o extras
+        + Agregar etiquetas, extras o correcciones
       </button>
       </>
       )}
@@ -639,7 +658,7 @@ export function WarehouseLedgerCard({
 
       {ledger.adjustments.length > 0 && (
         <div className="mt-3 border-t border-gray-100 pt-2">
-          <p className="mb-1 text-[11px] font-medium text-gray-400">Etiquetas y extras</p>
+          <p className="mb-1 text-[11px] font-medium text-gray-400">Otros conceptos</p>
           <div className="space-y-1">
             {ledger.adjustments.map((a) => (
               <div key={a.id} className="flex items-start justify-between gap-3 text-xs">
