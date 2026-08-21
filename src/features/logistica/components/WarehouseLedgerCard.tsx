@@ -22,6 +22,16 @@ function fechaHora(iso: string): string {
   })
 }
 
+/**
+ * La primera frase de una nota, para el resumen de arriba. Las notas explican
+ * de dónde salió cada cifra y por eso son largas; en el resumen solo cabe de
+ * qué es.
+ */
+function resumen(note: string): string {
+  const primera = note.split(/(?<=\.)\s/)[0]
+  return primera.replace(/\.$/, '')
+}
+
 /** El día siguiente a un YYYY-MM-DD — para decir "desde el 19" cuando el pago llegó al 18. */
 function siguienteDia(date: string): string {
   const [y, m, d] = date.split('-').map(Number)
@@ -572,22 +582,15 @@ export function WarehouseLedgerCard({
           </span>
           <span>{formatCOP(ledger.pendingAmount)}</span>
         </div>
-        {/* Cada concepto por separado, con su nota. Un total agregado no se puede
-            verificar: la usuaria vio "Otros conceptos $20.000" sin forma de
-            saber qué había adentro. */}
+        {/* Una línea por concepto, corta. La explicación completa vive abajo, en
+            la lista de conceptos — acá arriba solo estorbaba. Lo ya saldado no
+            aparece: se paga y desaparece. */}
         {ledger.pendingAdjustmentItems.map((a) => (
           <div key={a.id} className="flex items-baseline justify-between gap-3 text-gray-600">
-            <span className="min-w-0 leading-snug">
-              {a.note}
-              <span className="text-gray-400">{' · '}{fecha(`${a.date}T12:00:00-05:00`)}</span>
+            <span className="min-w-0 truncate" title={a.note}>
+              {resumen(a.note)}
             </span>
             <span className="whitespace-nowrap">{formatCOP(a.amount)}</span>
-          </div>
-        ))}
-        {ledger.settledConcepts.map((c) => (
-          <div key={c.id} className="flex items-baseline justify-between gap-3 text-happy-greenText">
-            <span>Ya pagado el {fecha(c.paidAt)}</span>
-            <span className="whitespace-nowrap">−{formatCOP(c.amount)}</span>
           </div>
         ))}
       </div>

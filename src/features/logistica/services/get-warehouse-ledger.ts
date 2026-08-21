@@ -297,12 +297,32 @@ async function buildLedger(
     .map((p) => ({ id: p.id, paidAt: p.paid_at, amount: Number(p.amount) }))
   const conceptosPagados = settledConcepts.reduce((sum, p) => sum + p.amount, 0)
 
-  const pendingAdjustmentItems = (adjustments ?? [])
+  /**
+   * Los conceptos que de verdad faltan por pagar.
+   *
+   * Un concepto ya saldado desaparece de la lista en vez de aparecer y luego
+   * restarse: mostrar las dos líneas era ruido — la usuaria solo quería ver que
+   * las etiquetas ya se pagaron (2026-08-21). Se consumen del más reciente
+   * hacia atrás, que es como se paga en la práctica.
+   */
+  const porSaldar = (adjustments ?? [])
     .filter((a) => esPosterior(a.period_start))
     .map((a) => ({ id: a.id, amount: Number(a.amount_delta), note: a.note, date: a.period_start }))
+    .sort((a, b) => b.date.localeCompare(a.date))
 
-  const pendingAdjustments =
-    pendingAdjustmentItems.reduce((sum, a) => sum + a.amount, 0) - conceptosPagados
+  let restante = conceptosPagados
+  const pendingAdjustmentItems: LedgerAdjustment[] = []
+  for (const item of porSaldar) {
+    if (restante >= item.amount) {
+      restante -= item.amount
+      continue
+    }
+    pendingAdjustmentItems.push({ ...item, amount: item.amount - restante })
+    restante = 0
+  }
+  pendingAdjustmentItems.reverse()
+
+  const pendingAdjustments = pendingAdjustmentItems.reduce((sum, a) => sum + a.amount, 0)
 
   return {
     warehouseId: w.id,
