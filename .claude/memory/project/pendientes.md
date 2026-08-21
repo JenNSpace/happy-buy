@@ -1,78 +1,65 @@
-# Pendientes — al 2026-08-20
+# Estado al 2026-08-21
 
-Leer esto primero al retomar.
+Leer esto primero al retomar. **Todo lo trabajado está desplegado en producción**
+(happy-buy-topaz.vercel.app).
 
-## Listo para pagar (Jen marca las tarjetas en /logistica)
+## Saldos con las bodegas
 
-| Bodega | Quincena | Total |
+| Bodega | Le debemos | De qué |
 |---|---|---|
-| Villa Del Rosario | pendiente | **$12.800** (ya se le pagaron $78.000) |
-| Galerías | pendiente | **$20.000** |
-| Galerías | 1–15 ago | $125.000 — **ya pagada** (24 de su cuenta + 1 Sal del 13-ago) |
+| **Galerías** (Daniel) | **$50.000** | 8 paquetes desde el 15-ago ($40.000) + 2 paquetes que ML nunca reflejó ($10.000) |
+| **Villa Del Rosario** (Gina) | **$26.800** | 6 paquetes desde el 19-ago ($20.000) + $6.800 que quedaron debiéndose del período ya cobrado |
 
-Gina cobró $78.000 y le corresponden **$84.800**: había olvidado anotar dos envíos (un Pack X3
-del 15-ago y una Multitoma del 18-ago) y sus dos etiquetas.
+Los $6.800 de Gina son los dos envíos que se le pasaron en su cuenta de cobro del 18-ago: cobró
+$78.000 cuando había generado $84.800.
 
-## Pendientes reales
+**Pagos ya registrados:** Daniel $125.000 (25 envíos, hasta el 14-ago) + $10.000 (etiquetas,
+20-ago). Gina $78.000 (hasta el 18-ago).
 
-1. ~~**Inventario que nunca se descontó.**~~ **FALSO — verificado el 2026-08-20.** La nota venía
-   de antes del **conteo físico del 18 de agosto**, que reseteó el stock a lo que Gina y Daniel
-   contaron (24 / 12 bolsas, 38 cables). Ese conteo borra la historia anterior: los 65 envíos
-   "sin movimiento" son de antes y no deben descontarse de nada. Desde el conteo, **14 de 14**
-   envíos tienen su movimiento. El mecanismo funciona.
+## Cómo funciona la cuenta corriente
 
-   Lo que sí quedó: **1 bolsa de más de Sal Céltica en Villa Del Rosario.** El ajuste del 18-ago
-   se registró como +4 cuando debía ser +3 (el saldo previo era 21, no 20). Pendiente de que Jen
-   cuente la repisa: si hay 19, se aplica −1; si hay 20, el conteo de Gina no incluía los
-   paquetes ya empacados y el sistema está bien.
-2. ~~**El pago de Galerías quedó en $0.**~~ **RESUELTO el 2026-08-20.** Se corrigió a $125.000 /
-   25 envíos, verificado contra la cuenta de cobro de Daniel y confirmado con Enrique.
+Reemplazó el modelo de quincenas fijas, que no servía porque las cuentas de cobro llegan tarde y
+cubren el rango que la bodega decida. **Generado − pagado = saldo**, y las fechas de cada pago son
+referencia, no la forma del dato.
 
-   **Por revisar aparte:** el envío 47756002876 está asignado a Galerías pero su movimiento de
-   inventario se registró contra Villa Del Rosario. No afectó el conteo físico de hoy, pero la
-   atribución por bodega puede estar torcida en otros envíos. La causa quedó clara: el pago se marcó a las 12:30 pm del 18-ago y los 17 envíos
-   que faltaba asignarle a Daniel entraron al sistema a las 12:39 pm — nueve minutos después. El
-   panel de cuenta corriente ahora muestra lo generado en el rango ANTES de guardar el pago,
-   justo para que eso no se repita.
-3. **`design-critic` sobre el resto del dashboard.** El 2026-08-20 se corrió sobre la tarjeta de
-   envío de `/logistica` y valió la pena — encontró un bug real de CSS (el renglón superior sin
-   `shrink-0`/`truncate`) además del problema de jerarquía. Faltan las tarjetas del dashboard y
-   las de Finanzas.
-4. **Optimización para celular**, en el resto de la app. Las tarjetas de `/logistica` ya se
-   verificaron a 390px con Playwright. Pendiente el mismo repaso en dashboard y Finanzas:
-   revisar el tooltip de `MiniBarChart` (depende de hover) y el scroll horizontal de `PnlTable`.
-5. **La grilla de `/logistica` está fija en 3 columnas y hay 3 temas de color que se reciclan**
-   (`WAREHOUSE_THEMES`, `theme[i % 3]`). Con una tercera bodega, dos columnas quedarían del
-   mismo color. Lo detectó `design-critic`; no es urgente pero conviene antes de que pase.
+Cuatro reglas que costaron encontrar, todas en `get-warehouse-ledger.ts`:
 
-## Desplegado el 2026-08-20
+1. **`warehouses.ledger_start`** — desde cuándo la cuenta del sistema es la fuente. **No es la
+   misma fecha para las dos bodegas**: Villa Del Rosario desde el 1-ago, Galerías desde el 15.
+2. **`isAttributionCertain`** — un envío cuenta si quedó registrado al despachar **o si es Flex**
+   (solo Gina hace Flex, así que no hay ambigüedad). Agencia asignada después NO cuenta: pudo ser
+   de cualquiera de las dos.
+3. **`coveredThrough`** sale del `period_end` más alto **solo de los pagos que cubren un período**
+   (más de un día). Un pago de un concepto suelto se registra en un solo día y no mueve la
+   cobertura: si lo hiciera, pagar etiquetas un día 20 haría ver como saldados todos los paquetes
+   hasta esa fecha.
+4. **`shortfall` se calcula por diferencia** (saldo − pendientes), para que las partes siempre
+   sumen el saldo aunque haya pagos con rangos solapados.
 
-Tres cambios en `/logistica`, todos en producción:
+El período anterior a `ledger_start` **no se calcula**: se salda con la cuenta de cobro que pasó
+la bodega, registrada como ajuste de apertura. El de Daniel son $125.000 (sus 24 envíos + la
+última Multi Toma).
 
-1. **El plazo de despacho lo decide ML.** El día sale de `/shipments/{id}/sla`, la hora la
-   ponemos nosotros. Ver [logistica-reglas-reales.md](logistica-reglas-reales.md).
-2. **El número grande son las unidades físicas a empacar** (cantidad × `units_per_sale`), con
-   sello `PACK X3` y la nota "En Mercado Libre aparece como 1 unidad". 20 de las últimas 50
-   ventas exigen empacar más de una unidad.
-3. **Rediseño de la tarjeta** tras pasar `design-critic`, y la separación de los dos relojes:
-   pasarse de nuestro corte es "sale en la próxima ronda", no una alarma.
+## Pendientes
 
-## Lo que quedó construido en sesiones anteriores
+1. **El envío 47756002876 está asignado a Galerías pero su movimiento de inventario quedó contra
+   Villa Del Rosario.** No afectó el conteo físico, pero la atribución por bodega puede estar
+   torcida en otros envíos. Sin revisar.
+2. **El deploy automático desde GitHub dejó de dispararse** el 2026-08-20. Se está desplegando con
+   `npx vercel deploy --prod --yes`. Vale revisar la integración.
+3. **`design-critic` sobre dashboard y Finanzas.** En la tarjeta de `/logistica` encontró un bug
+   real de CSS además del problema de jerarquía, así que vale repetirlo.
+4. **Celular** en el resto de la app. `/logistica` ya se verificó a 390px; falta el tooltip de
+   `MiniBarChart` (depende de hover) y el scroll horizontal de `PnlTable`.
+5. **La grilla de `/logistica` está fija en 3 columnas** con 3 temas de color que se reciclan
+   (`WAREHOUSE_THEMES`, `theme[i % 3]`): con una tercera bodega, dos columnas quedarían iguales.
 
-**Fase 3 — Finanzas** (ver [fase3-finanzas.md](fase3-finanzas.md)): tab `/finanzas` con caja,
-flujo de liberaciones, P&L mensual, tarjetas con cupo y registro de gastos. Motor de costos
-leyendo el neto real de Mercado Pago.
+## Inventario: cuadra, y la nota vieja era falsa
 
-**Logística** (ver [logistica-reglas-reales.md](logistica-reglas-reales.md)): corte de Flex a la
-1 pm, quincenas impagas visibles, y el bug que hacía desaparecer envíos ya entregados.
+El "inventario inflado" que se arrastraba como pendiente **no existe**. Venía de antes del conteo
+físico del 18-ago, que reseteó el stock; un conteo físico borra la historia anterior. El 20-ago
+Gina contó y los tres productos de Villa Del Rosario coincidieron **exacto** con el sistema
+(20 sal / 4 multitoma / 36 cables). Desde el conteo, todos los envíos tienen su movimiento.
 
-## Cómo se encontraron los bugs de esta sesión
-
-Vale la pena registrarlo como método, porque los cuatro salieron igual: **Jen comparando la
-pantalla contra papel o contra su cuenta de ML**, no una auditoría automática. El sistema se veía
-sano —totales redondos, columnas que sumaban— y estaba mal en cuatro lugares distintos.
-
-Los dos hallazgos más caros salieron de preguntas suyas, no de verificaciones propias:
-- *"¿de dónde sacaste este dato?"* → destapó $587.071 de compras personales mostradas como
-  ventas retenidas.
-- *"¿no serán dos paquetes de Daniel?"* → destapó un ajuste que duplicaba el pago de otra bodega.
+Ojo al comparar: las 20 bolsas incluían 2 ya vendidas sin despachar, y el sistema también las
+contaba. Los dos miraban lo mismo.

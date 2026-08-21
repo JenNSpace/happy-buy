@@ -68,3 +68,25 @@ La usuaria **cuenta lo disponible en repisa**, sin los paquetes ya armados
 esperando despacho. El sistema guarda el físico y solo descuenta al despachar.
 **físico = disponible + por despachar.** La UI dice "disponibles"; el término
 "comprometido" se descartó por confuso.
+
+## El modelo de pago cambió: cuenta corriente (2026-08-21)
+
+**Las quincenas fijas se eliminaron.** No servían: Enrique paga contra la cuenta de cobro que envía
+la bodega, y esa cuenta llega tarde y cubre el rango que ella decida — Gina cobró "del 1 al 18",
+que no es ninguna quincena. Con cajones fijos ese pago no se podía registrar sin inventar un
+período, y "¿cuánto le debo?" no tenía una sola respuesta.
+
+Ahora es **generado − pagado = saldo**, y las fechas de cada pago son referencia. Ver
+`project/pendientes.md` para las cuatro reglas del cálculo.
+
+**Lo que la pantalla hace ahora y antes no:**
+- Antes de guardar un pago, muestra qué generó la bodega en ese rango y la diferencia. Eso habría
+  cazado en el momento los $6.800 que le faltaron a Gina, en vez de días después.
+- **Genera la cuenta de cobro** en vez de recibirla: con producto, unidades físicas y el número de
+  venta de cada envío. El error de Gina nació en su cuaderno; si el sistema arma el detalle y ella
+  solo confirma, no nace.
+- Gina y Daniel ven **su propia cuenta**, los mismos números, en modo lectura.
+
+**Un patrón que se repite en las dos bodegas:** los envíos que se les escapan del cuaderno son los
+que salen **fuera del lote** — tarde en la noche, junto a otro despacho. A Gina se le pasaron dos
+así, a Daniel una Multi Toma. Vale la pena mirar ahí primero cuando una cuenta no cuadra.
