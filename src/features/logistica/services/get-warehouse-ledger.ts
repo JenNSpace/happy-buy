@@ -49,6 +49,27 @@ export interface WarehouseLedger {
   totalPaid: number
   /** Lo que falta por pagar. Negativo = se le pagó de más. */
   balance: number
+  /**
+   * Hasta qué día llega el último pago. Todo lo despachado después está
+   * pendiente y sin ninguna duda.
+   *
+   * Sin esto el "N paquetes despachados" de la tarjeta no decía nada útil: era
+   * el total del período, ya pagado en parte, así que el número no correspondía
+   * al saldo. La usuaria lo señaló el 2026-08-20 — a Daniel le cuadraba por
+   * casualidad y a Gina no.
+   */
+  coveredThrough: string | null
+  /** Paquetes despachados después del último pago: los que sí se deben. */
+  pendingPackages: number
+  pendingAmount: number
+  /** Etiquetas y extras posteriores al último pago. */
+  pendingAdjustments: number
+  /**
+   * Lo que quedó debiéndose de un período YA cobrado — cuando el pago fue menor
+   * que lo generado en ese rango. A Gina le pasó: cobró $78.000 cuando había
+   * generado $84.800, porque su cuenta se quedó corta en dos envíos.
+   */
+  shortfall: number
   payments: LedgerPayment[]
   adjustments: LedgerAdjustment[]
 }
@@ -88,6 +109,9 @@ export interface WarehouseLedger {
  * (ver `wasRecordedOnDispatch`).
  */
 
+
+/** Desde cuándo existe el sistema de pagos. Aplica a ajustes y pagos, que son entradas manuales. */
+const SYSTEM_START = '2026-08-01'
 
 interface WarehouseRow {
   id: string
@@ -143,6 +167,11 @@ export async function getGeneratedInRange(
   }
 }
 
+/** El día calendario de un instante, en Bogotá, como YYYY-MM-DD. */
+function bogotaDay(instant: string): string {
+  return new Date(instant).toLocaleDateString('en-CA', { timeZone: 'America/Bogota' })
+}
+
 /** Dos horas de tolerancia entre el despacho y la fila: más que eso es una corrección posterior. */
 export function wasRecordedOnDispatch(s: { created_at: string; delivered_at: string }): boolean {
   return new Date(s.created_at).getTime() <= new Date(s.delivered_at).getTime() + 2 * 60 * 60 * 1000
@@ -189,13 +218,17 @@ async function buildLedger(
       .from('warehouse_adjustments')
       .select('id, amount_delta, note, period_start')
       .eq('warehouse_id', w.id)
-      .gte('period_start', w.ledger_start)
+      // Los ajustes NO se filtran por `ledger_start`: ese corte existe porque la
+      // atribución de los ENVÍOS anteriores no es confiable, y un ajuste es una
+      // entrada manual, siempre confiable. Filtrarlos por ahí dejaba la apertura
+      // de Daniel fuera del período que salda, y aparecía como pendiente.
+      .gte('period_start', SYSTEM_START)
       .returns<{ id: string; amount_delta: number; note: string; period_start: string }[]>(),
     supabase
       .from('warehouse_payments')
       .select('id, amount, packages, period_start, period_end, note, paid_at')
       .eq('warehouse_id', w.id)
-      .gte('paid_at', `${w.ledger_start}T00:00:00-05:00`)
+      .gte('paid_at', `${SYSTEM_START}T00:00:00-05:00`)
       .order('paid_at', { ascending: false })
       .returns<
         {
@@ -217,6 +250,25 @@ async function buildLedger(
   const amountFromAdjustments = (adjustments ?? []).reduce((sum, a) => sum + Number(a.amount_delta), 0)
   const totalGenerated = amountFromPackages + amountFromAdjustments
   const totalPaid = (payments ?? []).reduce((sum, p) => sum + Number(p.amount), 0)
+  const balance = totalGenerated - totalPaid
+
+  // Hasta dónde llega lo ya cobrado. Lo despachado después es pendiente puro.
+  const coveredThrough =
+    (payments ?? []).reduce<string | null>(
+      (max, p) => (p.period_end && (!max || p.period_end > max) ? p.period_end : max),
+      null
+    ) ?? null
+
+  const esPosterior = (fecha: string) =>
+    !coveredThrough || fecha.slice(0, 10) > coveredThrough
+
+  const pendientes = coveredThrough
+    ? rows.filter((s) => bogotaDay(s.delivered_at) > coveredThrough)
+    : rows
+  const pendingAmount = pendientes.reduce((sum, s) => sum + feeFor(s.fulfillment_type, fees), 0)
+  const pendingAdjustments = (adjustments ?? [])
+    .filter((a) => esPosterior(a.period_start))
+    .reduce((sum, a) => sum + Number(a.amount_delta), 0)
 
   return {
     warehouseId: w.id,
@@ -228,7 +280,14 @@ async function buildLedger(
     amountFromAdjustments,
     totalGenerated,
     totalPaid,
-    balance: totalGenerated - totalPaid,
+    balance,
+    coveredThrough,
+    pendingPackages: pendientes.length,
+    pendingAmount,
+    pendingAdjustments,
+    // Por diferencia, para que las tres partes SIEMPRE sumen el saldo aunque
+    // haya varios pagos con rangos que se solapen.
+    shortfall: balance - pendingAmount - pendingAdjustments,
     payments: (payments ?? []).map((p) => ({
       id: p.id,
       paidAt: p.paid_at,

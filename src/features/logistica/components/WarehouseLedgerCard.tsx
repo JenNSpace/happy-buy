@@ -22,6 +22,12 @@ function fechaHora(iso: string): string {
   })
 }
 
+/** El día siguiente a un YYYY-MM-DD — para decir "desde el 19" cuando el pago llegó al 18. */
+function siguienteDia(date: string): string {
+  const [y, m, d] = date.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10)
+}
+
 /** Hoy en Bogotá como YYYY-MM-DD, para los campos de fecha. */
 function hoyBogota(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' })
@@ -209,7 +215,11 @@ function StatementPanel({ ledger, onClose }: { ledger: WarehouseLedger; onClose:
   // El canal solo importa si cambia la tarifa. Donde las dos son iguales la
   // columna repetía "Agencia" en cada fila sin decir nada.
   const muestraCanal = ledger.feePerPackageFlex !== ledger.feePerPackageAgencia
-  const [from, setFrom] = useState(primerDiaDelMes())
+  // Arranca en el período que está sin pagar: la pregunta que trae a alguien
+  // acá es "¿cuáles paquetes son los que debo?".
+  const [from, setFrom] = useState(
+    ledger.coveredThrough ? siguienteDia(ledger.coveredThrough) : primerDiaDelMes()
+  )
   const [to, setTo] = useState(hoyBogota())
   const [statement, setStatement] = useState<BillingStatement | null>(null)
   const [loading, setLoading] = useState(false)
@@ -489,6 +499,7 @@ export function WarehouseLedgerCard({
   }
 
   const debe = ledger.balance > 0
+  const ultimoPago = ledger.payments[0] ?? null
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4">
@@ -506,28 +517,60 @@ export function WarehouseLedgerCard({
         </span>
       </div>
 
+      {/* Dos bloques, no un total revuelto: lo que YA se pagó y hasta cuándo, y
+          lo que se debe desde entonces. Antes la tarjeta mostraba "N paquetes
+          despachados" del período completo —ya cobrado en parte— y ese número
+          no correspondía al saldo. */}
+      {ultimoPago && (
+        <div className="mb-3 rounded-md bg-gray-50 p-2 text-sm">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400">Ya pagado</span>
+            <span className="text-[11px] text-gray-400">{fecha(ultimoPago.paidAt)}</span>
+          </div>
+          <div className="mt-0.5 flex items-baseline justify-between gap-2">
+            <span className="text-gray-600">
+              {ultimoPago.packages !== null && `${ultimoPago.packages} paquetes · `}
+              hasta el {fecha(`${ledger.coveredThrough}T12:00:00-05:00`)}
+            </span>
+            <span className="font-medium text-gray-900">{formatCOP(ledger.totalPaid)}</span>
+          </div>
+          {ledger.shortfall !== 0 && (
+            <p className="mt-1 text-[11px] leading-snug text-amber-700">
+              {ledger.shortfall > 0 ? (
+                <>
+                  Quedó debiendo <span className="font-semibold">{formatCOP(ledger.shortfall)}</span> de ese
+                  período: se pagó menos de lo que había generado.
+                </>
+              ) : (
+                <>
+                  Se pagó <span className="font-semibold">{formatCOP(-ledger.shortfall)}</span> de más en ese
+                  período.
+                </>
+              )}
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="space-y-1 text-sm">
+        <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">
+          {ledger.coveredThrough
+            ? `Desde el ${fecha(`${siguienteDia(ledger.coveredThrough)}T12:00:00-05:00`)}`
+            : 'Todo lo generado'}
+        </p>
         <div className="flex justify-between text-gray-600">
           <span>
-            {ledger.packages} paquete{ledger.packages === 1 ? '' : 's'} despachado
-            {ledger.packages === 1 ? '' : 's'}
+            {ledger.pendingPackages} paquete{ledger.pendingPackages === 1 ? '' : 's'} despachado
+            {ledger.pendingPackages === 1 ? '' : 's'}
           </span>
-          <span>{formatCOP(ledger.amountFromPackages)}</span>
+          <span>{formatCOP(ledger.pendingAmount)}</span>
         </div>
-        {ledger.amountFromAdjustments !== 0 && (
+        {ledger.pendingAdjustments !== 0 && (
           <div className="flex justify-between text-gray-600">
             <span>Etiquetas y extras</span>
-            <span>{formatCOP(ledger.amountFromAdjustments)}</span>
+            <span>{formatCOP(ledger.pendingAdjustments)}</span>
           </div>
         )}
-        <div className="flex justify-between border-t border-gray-100 pt-1 font-medium text-gray-900">
-          <span>Generado</span>
-          <span>{formatCOP(ledger.totalGenerated)}</span>
-        </div>
-        <div className="flex justify-between text-gray-600">
-          <span>Pagado</span>
-          <span>−{formatCOP(ledger.totalPaid)}</span>
-        </div>
       </div>
 
       {/* El saldo es la respuesta a "¿cuánto le debo?", y es una sola sin
