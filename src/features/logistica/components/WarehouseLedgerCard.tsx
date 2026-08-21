@@ -516,7 +516,6 @@ export function WarehouseLedgerCard({
   }
 
   const debe = ledger.balance > 0
-  const ultimoPago = ledger.payments[0] ?? null
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4">
@@ -538,19 +537,31 @@ export function WarehouseLedgerCard({
           lo que se debe desde entonces. Antes la tarjeta mostraba "N paquetes
           despachados" del período completo —ya cobrado en parte— y ese número
           no correspondía al saldo. */}
-      {ultimoPago && (
+      {ledger.payments.length > 0 && (
         <div className="mb-3 rounded-md bg-gray-50 p-2 text-sm">
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400">Ya pagado</span>
-            <span className="text-[11px] text-gray-400">{fecha(ultimoPago.paidAt)}</span>
-          </div>
-          <div className="mt-0.5 flex items-baseline justify-between gap-2">
-            <span className="text-gray-600">
-              {ultimoPago.packages !== null && `${ultimoPago.packages} paquetes · `}
-              hasta el {fecha(`${ledger.coveredThrough}T12:00:00-05:00`)}
-            </span>
-            <span className="font-medium text-gray-900">{formatCOP(ledger.totalPaid)}</span>
-          </div>
+          <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400">Ya pagado</p>
+          {/* Cada pago en su renglón, con lo que cubre. Sumarlos en un solo
+              número escondía que $125.000 eran paquetes y $10.000 etiquetas. */}
+          {ledger.payments.map((p) => (
+            <div key={p.id} className="flex items-baseline justify-between gap-2 py-0.5">
+              <span className="min-w-0 truncate text-gray-600" title={p.note ?? ''}>
+                <span className="font-medium text-gray-900">{formatCOP(p.amount)}</span>
+                {' · '}
+                {p.packages !== null
+                  ? `${p.packages} paquetes · hasta el ${fecha(`${p.periodEnd}T12:00:00-05:00`)}`
+                  : `${resumen(p.note ?? '')} · ${fecha(p.paidAt)}`}
+              </span>
+              {!readOnly && (
+                <button
+                  onClick={() => handleDelete(p.id)}
+                  disabled={deleting === p.id}
+                  className="shrink-0 rounded px-1.5 py-0.5 text-[11px] text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                >
+                  {deleting === p.id ? '...' : 'Deshacer'}
+                </button>
+              )}
+            </div>
+          ))}
           {ledger.shortfall !== 0 && (
             <p className="mt-1 text-[11px] leading-snug text-amber-700">
               {ledger.shortfall > 0 ? (
@@ -560,8 +571,7 @@ export function WarehouseLedgerCard({
                 </>
               ) : (
                 <>
-                  Se pagó <span className="font-semibold">{formatCOP(-ledger.shortfall)}</span> de más en ese
-                  período.
+                  Se pagó <span className="font-semibold">{formatCOP(-ledger.shortfall)}</span> de más.
                 </>
               )}
             </p>
@@ -662,64 +672,33 @@ export function WarehouseLedgerCard({
       {ledger.adjustments.length > 0 && (
         <div className="mt-3 border-t border-gray-100 pt-2">
           <p className="mb-1 text-[11px] font-medium text-gray-400">Otros conceptos</p>
-          <div className="space-y-1">
-            {ledger.adjustments.map((a) => (
-              <div key={a.id} className="flex items-start justify-between gap-3 text-xs">
-                <div className="min-w-0">
-                  <span className="font-medium text-gray-700">{formatCOP(a.amount)}</span>
-                  <span className="text-gray-400">{' · '}{fecha(`${a.date}T12:00:00-05:00`)}</span>
-                  <p className="text-[11px] leading-snug text-gray-400">{a.note}</p>
-                </div>
-                {!readOnly && (
-                  <button
-                    onClick={async () => {
-                      setDeleting(a.id)
-                      await removeAdjustment(a.id)
-                      setDeleting(null)
-                      router.refresh()
-                    }}
-                    disabled={deleting === a.id}
-                    className="shrink-0 rounded px-2 py-1 text-[11px] text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                  >
-                    {deleting === a.id ? '...' : 'Quitar'}
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+          {ledger.adjustments.map((a) => (
+            <div key={a.id} className="flex items-baseline justify-between gap-2 py-0.5 text-xs">
+              <span className="min-w-0 truncate text-gray-600" title={a.note}>
+                <span className="font-medium text-gray-700">{formatCOP(a.amount)}</span>
+                {' · '}
+                {resumen(a.note)}
+                <span className="text-gray-400">{' · '}{fecha(`${a.date}T12:00:00-05:00`)}</span>
+              </span>
+              {!readOnly && (
+                <button
+                  onClick={async () => {
+                    setDeleting(a.id)
+                    await removeAdjustment(a.id)
+                    setDeleting(null)
+                    router.refresh()
+                  }}
+                  disabled={deleting === a.id}
+                  className="shrink-0 rounded px-1.5 py-0.5 text-[11px] text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                >
+                  {deleting === a.id ? '...' : 'Quitar'}
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
-      {ledger.payments.length > 0 && (
-        <div className="mt-3 border-t border-gray-100 pt-2">
-          <p className="mb-1 text-[11px] font-medium text-gray-400">Pagos registrados</p>
-          <div className="space-y-1">
-            {ledger.payments.map((p) => (
-              <div key={p.id} className="flex items-start justify-between gap-3 text-xs">
-                <div className="min-w-0">
-                  <span className="font-medium text-gray-700">{formatCOP(p.amount)}</span>
-                  <span className="text-gray-400">
-                    {' · '}
-                    {p.periodStart && p.periodEnd
-                      ? `${fecha(`${p.periodStart}T12:00:00-05:00`)} al ${fecha(`${p.periodEnd}T12:00:00-05:00`)}`
-                      : fecha(p.paidAt)}
-                  </span>
-                  {p.note && <p className="text-[11px] leading-snug text-gray-400">{p.note}</p>}
-                </div>
-                {!readOnly && (
-                  <button
-                    onClick={() => handleDelete(p.id)}
-                    disabled={deleting === p.id}
-                    className="shrink-0 rounded px-2 py-1 text-[11px] text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                  >
-                    {deleting === p.id ? '...' : 'Deshacer'}
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
