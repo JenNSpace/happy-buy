@@ -33,7 +33,7 @@ export function ProductLine({
   return (
     <div className="flex items-start gap-2.5">
       <span
-        className={`flex shrink-0 items-center justify-center rounded-lg bg-happy-green font-extrabold text-white ${
+        className={`flex shrink-0 items-center justify-center rounded-xl bg-happy-green font-extrabold tabular-nums text-white ${
           isMulti ? 'h-12 w-12 text-2xl' : 'h-9 w-9 text-lg'
         }`}
       >
@@ -47,7 +47,7 @@ export function ProductLine({
           </span>
           {!isMulti && <span className="text-sm text-gray-500">· {line.unitLabel}</span>}
           {line.packLabel && (
-            <span className="rounded bg-gray-900 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+            <span className="inline-flex items-center rounded-full bg-gray-900 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em] text-white">
               {line.packLabel}
             </span>
           )}
@@ -64,7 +64,7 @@ export function ProductLine({
         {/* Sin mapeo no podemos saber si la publicación es un pack: se avisa en vez
             de asumir 1, que es el error que manda el pedido incompleto. */}
         {line.unknown && (
-          <p className="mt-1 rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800">
+          <p className="mt-1 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] font-medium text-amber-800">
             Publicación nueva sin registrar — confirma en Mercado Libre cuántas unidades trae.
           </p>
         )}

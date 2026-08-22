@@ -9,6 +9,7 @@ import { FulfillmentBadge, FULFILLMENT_BORDER_STYLE, FULFILLMENT_CARD_BG } from 
 import { ProductLine } from './ProductLine'
 import type { PackingMap } from '../utils/product-name'
 import type { BodegaShipment } from '../types'
+import { SURFACE_SHADOW, BUTTON_GHOST, BUTTON_PRIMARY } from '@/shared/ui/surface'
 
 export function BodegaShipmentCard({
   shipment,
@@ -56,7 +57,7 @@ export function BodegaShipmentCard({
 
   return (
     <div
-      className={`rounded-lg border border-gray-200 border-l-4 p-4 ${FULFILLMENT_CARD_BG[shipment.fulfillmentType]} ${FULFILLMENT_BORDER_STYLE[shipment.fulfillmentType]}`}
+      className={`rounded-2xl border border-gray-200 border-l-4 p-4 ${SURFACE_SHADOW} ${FULFILLMENT_CARD_BG[shipment.fulfillmentType]} ${FULFILLMENT_BORDER_STYLE[shipment.fulfillmentType]}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -65,7 +66,7 @@ export function BodegaShipmentCard({
           </div>
           {/* Never hide a shipment we couldn't classify — make the human check it. */}
           {shipment.dispatchState === 'unknown' && (
-            <p className="mb-2 rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800">
+            <p className="mb-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] font-medium text-amber-800">
               Estado no reconocido — confirma en Mercado Libre antes de despacharlo.
             </p>
           )}
@@ -112,14 +113,14 @@ export function BodegaShipmentCard({
           href={`/api/shipping/label/${shipment.shipmentId}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+          className={BUTTON_GHOST}
         >
           {shipment.printed ? 'Reimprimir guía' : 'Imprimir guía'}
         </a>
         <button
           onClick={handleDeliver}
           disabled={delivering}
-          className="rounded-md bg-happy-green px-3 py-1.5 text-sm text-white hover:bg-happy-greenDark disabled:opacity-50"
+          className={BUTTON_PRIMARY}
         >
           {delivering ? 'Guardando...' : 'Marcar entregado'}
         </button>

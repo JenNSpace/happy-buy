@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { formatCOP, formatPercent } from '@/shared/utils/format'
 import { updateCardSettings } from '../services/finanzas-actions'
 import type { Debt } from '../services/get-debts'
+import { SURFACE_CARD, EYEBROW } from '@/shared/ui/surface'
 
 /**
  * Verde bajo 50%, ámbar entre 50 y 80, rojo por encima.
@@ -34,10 +35,10 @@ export function DebtCard({ debt }: { debt: Debt }) {
     .join(' · ')
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div className={`${SURFACE_CARD} p-5`}>
       <h3 className="text-sm font-semibold text-gray-900">{method.name}</h3>
 
-      <p className="mt-3 text-[11px] font-semibold uppercase tracking-wider text-gray-400">Debes</p>
+      <p className={`mt-3 ${EYEBROW}`}>Debes</p>
       <p className="text-2xl font-bold tabular-nums text-gray-900">{formatCOP(owed)}</p>
       <p className="mt-0.5 text-sm text-gray-500">{detalle || 'todo al día'}</p>
 
@@ -134,7 +135,7 @@ function CardSettingsForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-4 space-y-3 border-t border-gray-100 pt-4">
+    <form onSubmit={handleSubmit} className="mt-4 space-y-3 border-t border-t-gray-900/[0.07] pt-4">
       <label className="block">
         <span className="text-xs text-gray-500">Cupo total</span>
         <input
@@ -142,7 +143,7 @@ function CardSettingsForm({
           value={limit}
           onChange={(e) => setLimit(e.target.value)}
           placeholder="Ej: 1500000"
-          className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+          className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm"
         />
       </label>
 
@@ -155,7 +156,7 @@ function CardSettingsForm({
             max="31"
             value={statementDay}
             onChange={(e) => setStatementDay(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+            className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm"
           />
         </label>
         <label className="block">
@@ -166,7 +167,7 @@ function CardSettingsForm({
             max="31"
             value={dueDay}
             onChange={(e) => setDueDay(e.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+            className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm"
           />
         </label>
       </div>
@@ -177,7 +178,7 @@ function CardSettingsForm({
         <button
           type="submit"
           disabled={saving}
-          className="rounded-md bg-happy-green px-3 py-1.5 text-sm font-medium text-white hover:bg-happy-greenDark disabled:opacity-50"
+          className="rounded-xl bg-happy-green px-3 py-2 text-sm font-medium text-white hover:bg-happy-greenDark disabled:opacity-50"
         >
           {saving ? 'Guardando…' : 'Guardar'}
         </button>

@@ -1,4 +1,6 @@
 import { formatCOP } from '@/shared/utils/format'
+import { pluralize } from '@/shared/utils/pluralize'
+import { SURFACE_CARD, PILL, EYEBROW, HAIRLINE_T } from '@/shared/ui/surface'
 import type { PendingShipment } from '../types'
 import type { FulfillmentType } from '../services/parse-shipment'
 import type { FullSummary } from '../services/get-full-summary'
@@ -12,6 +14,16 @@ const TILE_TITLE: Record<FulfillmentType, string> = {
   other: 'Otro',
 }
 
+/** El dato que la tarjeta promete en su título va grande; lo demás lo acompaña. */
+function Hero({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="flex items-baseline gap-2">
+      <span className="text-[30px] font-bold leading-none tabular-nums tracking-tight text-gray-900">{value}</span>
+      <span className="text-[13px] leading-tight text-gray-500">{label}</span>
+    </div>
+  )
+}
+
 /**
  * Full has nothing to dispatch — ML ships it — so instead of a "por enviar"
  * count it answers the only two questions that apply: what's left there and
@@ -20,20 +32,27 @@ const TILE_TITLE: Record<FulfillmentType, string> = {
  */
 function FullTile({ summary }: { summary: FullSummary }) {
   return (
-    <div className="rounded-lg border border-gray-800 bg-white p-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Full</p>
-      <p className="mb-2 text-sm font-bold text-gray-900">Lo despacha Mercado Libre</p>
+    <div className={`${SURFACE_CARD} flex h-full flex-col p-4`}>
+      <span className={`${PILL} w-fit bg-gray-900 text-white`}>Full</span>
+      <p className="mt-2 text-[15px] font-semibold leading-tight text-gray-900">Lo despacha Mercado Libre</p>
 
-      {summary.products.map((p) => (
-        <p key={p.productId} className="text-sm text-gray-600">
-          {p.shortName} <span className="font-semibold text-gray-900">{p.stock}</span>
-        </p>
-      ))}
+      <div className="mt-3 space-y-1 pb-2.5">
+        {summary.products.map((p) => (
+          <div key={p.productId} className="flex items-baseline justify-between gap-2 text-[13px]">
+            <span className="min-w-0 truncate text-gray-500">{p.shortName}</span>
+            <span className="shrink-0 font-semibold tabular-nums text-gray-900">{p.stock}</span>
+          </div>
+        ))}
+      </div>
 
-      <p className="mt-1 border-t border-gray-100 pt-1 text-sm text-gray-600">
-        Vendidas <span className="font-semibold text-happy-greenDark">{summary.totalSold}</span>
-        <span className="ml-2 text-xs text-gray-400">{formatCOP(summary.revenue)}</span>
-      </p>
+      <div className={`mt-auto flex items-baseline justify-between gap-2 pt-2.5 text-[13px] ${HAIRLINE_T}`}>
+        <span className="text-gray-500">Vendidas</span>
+        <span className="shrink-0">
+          {/* greenText, no greenDark: a 13px el greenDark no pasa AA sobre blanco. */}
+          <span className="font-semibold tabular-nums text-happy-greenText">{summary.totalSold}</span>
+          <span className="ml-2 text-[11px] tabular-nums text-gray-400">{formatCOP(summary.revenue)}</span>
+        </span>
+      </div>
     </div>
   )
 }
@@ -58,17 +77,22 @@ export function DispatchSummaryTiles({
         const readyToShip = items.filter((s) => s.printed).length
 
         return (
-          <div key={type} className="rounded-lg border border-gray-200 bg-white p-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Por enviar</p>
-            <p className="mb-2 text-sm font-bold text-gray-900">{TILE_TITLE[type]}</p>
-            {toPrint > 0 && (
-              <p className="text-sm text-gray-600">
-                Etiquetas por imprimir <span className="font-semibold text-happy-greenDark">{toPrint}</span>
-              </p>
-            )}
-            <p className="text-sm text-gray-600">
-              Listas para despachar <span className="font-semibold text-happy-greenDark">{readyToShip}</span>
-            </p>
+          <div key={type} className={`${SURFACE_CARD} flex h-full flex-col p-4`}>
+            <p className={EYEBROW}>Por enviar</p>
+            <p className="mt-0.5 text-[15px] font-semibold leading-tight text-gray-900">{TILE_TITLE[type]}</p>
+
+            <div className="mt-auto pt-3">
+              <Hero value={readyToShip} label={`${pluralize('lista', readyToShip)} para despachar`} />
+
+              {/* Solo cuando hay algo por imprimir: un "0 etiquetas" constante le
+                  enseña al ojo a saltarse este renglón. */}
+              {toPrint > 0 && (
+                <p className={`mt-2.5 pt-2.5 text-[13px] text-gray-500 ${HAIRLINE_T}`}>
+                  <span className="font-semibold tabular-nums text-gray-900">{toPrint}</span>{' '}
+                  {pluralize('etiqueta', toPrint)} por imprimir
+                </p>
+              )}
+            </div>
           </div>
         )
       })}

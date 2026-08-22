@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { MiniBarChart, type MiniBarChartBucket } from '@/features/dashboard/components/MiniBarChart'
 import { formatCOP } from '@/shared/utils/format'
 import type { CashFlow } from '../services/get-cash-flow'
+import { SURFACE_CARD, EYEBROW } from '@/shared/ui/surface'
 
 const VISIBLE_DEPOSITS = 10
 
@@ -24,7 +25,7 @@ export function CashFlowSection({ flow }: { flow: CashFlow }) {
 
   if (flow.deposits.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className={`${SURFACE_CARD} p-6`}>
         <h2 className="text-lg font-semibold text-gray-900">Cuándo entra la plata</h2>
         <p className="mt-4 text-sm text-gray-500">
           No hay pagos pendientes de liberar. Todo lo que vendiste ya está disponible.
@@ -43,7 +44,7 @@ export function CashFlowSection({ flow }: { flow: CashFlow }) {
   const visible = showAll ? flow.deposits : flow.deposits.slice(0, VISIBLE_DEPOSITS)
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+    <div className={`${SURFACE_CARD} p-6`}>
       <div className="flex items-baseline justify-between gap-3">
         <h2 className="text-lg font-semibold text-gray-900">Cuándo entra la plata</h2>
         <span className="shrink-0 text-sm text-gray-500">{formatCOP(flow.totalPending)} en camino</span>
@@ -69,10 +70,10 @@ export function CashFlowSection({ flow }: { flow: CashFlow }) {
       </div>
 
       <div className="mt-6">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+        <h3 className={EYEBROW}>
           Próximos depósitos
         </h3>
-        <ul className="mt-2 divide-y divide-gray-100">
+        <ul className="mt-2 divide-y divide-gray-900/[0.06]">
           {visible.map((d) => (
             <li key={d.date} className="flex items-baseline justify-between gap-3 py-2">
               <span className="text-sm text-gray-700">{formatDate(d.date)}</span>

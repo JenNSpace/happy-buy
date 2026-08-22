@@ -32,7 +32,7 @@ export function CostModelChangeBanner() {
   }
 
   return (
-    <div className="rounded-xl border border-happy-green/30 bg-happy-green/5 p-4">
+    <div className="rounded-2xl border border-happy-green/30 bg-happy-green/5 p-4">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h3 className="text-sm font-semibold text-gray-900">

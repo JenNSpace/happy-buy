@@ -1,4 +1,5 @@
 import type { PackingInfo } from '@/features/inventario/services/get-product-catalog'
+import { pluralize } from '@/shared/utils/pluralize'
 
 export type PackingMap = Record<string, PackingInfo>
 
@@ -15,12 +16,6 @@ export type PackingMap = Record<string, PackingInfo>
  */
 export function getShortProductName(packing: PackingMap, itemId: string, fallbackTitle: string): string {
   return packing[itemId]?.shortName ?? fallbackTitle
-}
-
-/** Spanish plural for the unit words we actually use: bolsa→bolsas, unidad→unidades. */
-function pluralize(word: string, count: number): string {
-  if (count === 1) return word
-  return /[aeiou]$/i.test(word) ? `${word}s` : `${word}es`
 }
 
 export interface PackingLine {

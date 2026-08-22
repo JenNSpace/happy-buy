@@ -1,5 +1,6 @@
 import { formatCOP } from '@/shared/utils/format'
 import type { CashSummary } from '../services/get-cash-summary'
+import { SURFACE_CARD, EYEBROW } from '@/shared/ui/surface'
 
 const ventas = (n: number) => `${n} ${n === 1 ? 'venta' : 'ventas'}`
 const depositos = (n: number) => `${n} ${n === 1 ? 'depósito' : 'depósitos'}`
@@ -27,7 +28,7 @@ function Figure({
 }) {
   return (
     <div>
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">{label}</p>
+      <p className={EYEBROW}>{label}</p>
       <p
         className={`mt-1 font-bold tracking-tight tabular-nums ${
           size === 'lg' ? 'text-4xl' : 'text-2xl'
@@ -45,7 +46,7 @@ export function CashSummaryCard({ summary }: { summary: CashSummary }) {
   // plata" cuando lo cierto es que todavía no sabemos.
   if (summary.sinDatos) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className={`${SURFACE_CARD} p-6`}>
         <h2 className="text-lg font-semibold text-gray-900">Tu plata hoy</h2>
         <p className="mt-4 text-sm text-gray-500">
           Sincronizando los pagos de Mercado Libre… Actualiza la página en unos segundos.
@@ -55,7 +56,7 @@ export function CashSummaryCard({ summary }: { summary: CashSummary }) {
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+    <div className={`${SURFACE_CARD} p-6`}>
       <h2 className="text-lg font-semibold text-gray-900">Tu plata hoy</h2>
 
       <div className="mt-5 grid grid-cols-1 gap-6 sm:grid-cols-3">
@@ -107,7 +108,7 @@ function AtrasadoNotice({ summary }: { summary: CashSummary }) {
     : null
 
   return (
-    <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-4">
+    <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4">
       <p className="text-sm font-semibold text-gray-900">
         {formatCOP(summary.atrasado)} llevan más tiempo del normal sin liberarse
       </p>

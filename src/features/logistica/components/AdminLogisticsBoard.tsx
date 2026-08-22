@@ -12,6 +12,7 @@ import { getCountdownInfo, TIER_TEXT_STYLE, TIER_ICON, URGENCY_BOX_STYLE } from 
 import type { PendingShipment } from '../types'
 import type { FullSummary } from '../services/get-full-summary'
 import type { Warehouse } from '@/types/database'
+import { SURFACE_CARD_RINGLESS, HAIRLINE_T, SCROLL_THIN, BUTTON_GHOST } from '@/shared/ui/surface'
 
 /** Most urgent first (overdue counts as "most urgent"); items with no deadline sort last. */
 function sortByUrgency(shipments: PendingShipment[]): PendingShipment[] {
@@ -46,7 +47,8 @@ interface ColumnTheme {
   headerText: string
   badgeBg: string
   badgeText: string
-  accentBorder: string
+  /** Anillo del contenedor. Va aparte del `ring-1` de SURFACE_CARD_RINGLESS. */
+  ring: string
 }
 
 const UNASSIGNED_THEME: ColumnTheme = {
@@ -54,7 +56,7 @@ const UNASSIGNED_THEME: ColumnTheme = {
   headerText: 'text-white',
   badgeBg: 'bg-white/15',
   badgeText: 'text-white',
-  accentBorder: 'border-gray-800',
+  ring: 'ring-gray-900/20',
 }
 
 const WAREHOUSE_THEMES: ColumnTheme[] = [
@@ -63,21 +65,21 @@ const WAREHOUSE_THEMES: ColumnTheme[] = [
     headerText: 'text-white',
     badgeBg: 'bg-white/20',
     badgeText: 'text-white',
-    accentBorder: 'border-happy-green',
+    ring: 'ring-happy-green/40',
   },
   {
     header: 'bg-happy-lime',
     headerText: 'text-gray-900',
     badgeBg: 'bg-gray-900/10',
     badgeText: 'text-gray-900',
-    accentBorder: 'border-happy-lime',
+    ring: 'ring-happy-lime/50',
   },
   {
     header: 'bg-happy-greenDark',
     headerText: 'text-white',
     badgeBg: 'bg-white/20',
     badgeText: 'text-white',
-    accentBorder: 'border-happy-greenDark',
+    ring: 'ring-happy-greenDark/40',
   },
 ]
 
@@ -132,7 +134,7 @@ function ShipmentCard({
 
   return (
     <div
-      className={`border-b border-l-4 border-gray-100 p-4 last:border-b-0 ${FULFILLMENT_BORDER_STYLE[shipment.fulfillmentType]} ${FULFILLMENT_CARD_BG[shipment.fulfillmentType]}`}
+      className={`border-b border-b-gray-900/[0.07] border-l-4 p-4 last:border-b-0 ${FULFILLMENT_BORDER_STYLE[shipment.fulfillmentType]} ${FULFILLMENT_CARD_BG[shipment.fulfillmentType]}`}
     >
       {/* ZONA 1 — contexto. Una sola línea que nunca se parte: sin `shrink-0` y
           `truncate` un nickname largo en mayúsculas empujaba el badge del canal
@@ -148,7 +150,7 @@ function ShipmentCard({
 
       {/* Never hide a shipment we couldn't classify — make the human check it. */}
       {shipment.dispatchState === 'unknown' && (
-        <p className="mb-2 rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800">
+        <p className="mb-2 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] font-medium text-amber-800">
           Estado no reconocido — confirma en Mercado Libre antes de despacharlo.
         </p>
       )}
@@ -198,12 +200,12 @@ function ShipmentCard({
       {/* ZONA 4 — acción, separada por un hairline. Asignar bodega es lo
           principal acá; imprimir queda en segundo plano pero con área de toque
           suficiente para el celular. */}
-      <div className="flex items-center gap-2 border-t border-gray-200/70 pt-3">
+      <div className={`flex items-center gap-2 pt-3 ${HAIRLINE_T}`}>
         <select
           value={warehouseId}
           onChange={(e) => handleChange(e.target.value)}
           disabled={saving}
-          className={`min-w-0 flex-1 rounded-md border bg-white px-2 py-2 text-sm focus:border-happy-green focus:outline-none focus:ring-1 focus:ring-happy-green disabled:opacity-50 ${
+          className={`min-w-0 flex-1 rounded-xl border bg-white px-3 py-2 text-sm focus:border-happy-green focus:outline-none focus:ring-1 focus:ring-happy-green disabled:opacity-50 ${
             warehouseId ? 'border-gray-300 text-gray-900' : 'border-dashed border-gray-400 text-gray-500'
           }`}
         >
@@ -218,7 +220,7 @@ function ShipmentCard({
           href={`/api/shipping/label/${shipment.shipmentId}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="shrink-0 whitespace-nowrap rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          className={`shrink-0 whitespace-nowrap ${BUTTON_GHOST}`}
         >
           {shipment.printed ? 'Reimprimir' : 'Imprimir'}
         </a>
@@ -249,15 +251,17 @@ function ShipmentColumn({
   packing: PackingMap
 }) {
   return (
-    <div className={`flex flex-col overflow-hidden rounded-xl border-2 ${theme.accentBorder} bg-white shadow-sm`}>
+    <div className={`flex flex-col overflow-hidden ${SURFACE_CARD_RINGLESS} ${theme.ring}`}>
       <div className={`flex items-center justify-between px-4 py-3 ${theme.header} ${theme.headerText}`}>
-        <h3 className="text-sm font-bold uppercase tracking-wide">{title}</h3>
-        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${theme.badgeBg} ${theme.badgeText}`}>
+        <h3 className="text-[13px] font-bold uppercase tracking-[0.06em]">{title}</h3>
+        <span
+          className={`rounded-full px-2.5 py-0.5 text-xs font-semibold tabular-nums ${theme.badgeBg} ${theme.badgeText}`}
+        >
           {items.length}
         </span>
       </div>
 
-      <div className="max-h-[65vh] overflow-y-auto">
+      <div className={`max-h-[65vh] overflow-y-auto ${SCROLL_THIN}`}>
         {items.length === 0 ? (
           <p className="p-4 text-xs text-gray-400">{emptyLabel}</p>
         ) : (

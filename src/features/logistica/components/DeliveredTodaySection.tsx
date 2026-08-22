@@ -19,7 +19,10 @@ export function DeliveredTodaySection({
       ) : (
         <div className="space-y-2">
           {shipments.map((s) => (
-            <div key={s.shipmentId} className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-2">
+            <div
+              key={s.shipmentId}
+              className="flex items-center justify-between rounded-xl bg-white px-4 py-2.5 ring-1 ring-gray-900/[0.06]"
+            >
               <div>
                 {s.items.map((item, i) => (
                   <p key={i} className="text-sm text-gray-600">
@@ -28,7 +31,7 @@ export function DeliveredTodaySection({
                   </p>
                 ))}
               </div>
-              <span className="whitespace-nowrap text-xs text-happy-greenDark">
+              <span className="whitespace-nowrap text-xs tabular-nums text-happy-greenText">
                 ✓ {new Date(s.deliveredAt).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>

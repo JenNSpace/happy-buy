@@ -1,5 +1,6 @@
 import { formatCOP, formatPercent } from '@/shared/utils/format'
 import type { PnlMonth } from '../services/get-pnl'
+import { SURFACE_CARD, EYEBROW } from '@/shared/ui/surface'
 
 /** Una fila de costo. Gris con "−", nunca roja: son costos esperados, no alarmas. */
 function Row({
@@ -85,10 +86,10 @@ function SignedRow({
 
 function GroupHeader({ title, months, total }: { title: string; months: PnlMonth[]; total: (m: PnlMonth) => number }) {
   return (
-    <tr className="border-t border-gray-100">
+    <tr className="border-t border-t-gray-900/[0.07]">
       <th
         scope="row"
-        className="pt-3 pr-4 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400"
+        className={`pt-3 pr-4 text-left ${EYEBROW}`}
       >
         {title}
       </th>
@@ -110,7 +111,7 @@ export function PnlTable({ months }: { months: PnlMonth[] }) {
 
   if (!hasData) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className={`${SURFACE_CARD} p-6`}>
         <h2 className="text-lg font-semibold text-gray-900">Resultado por mes</h2>
         <p className="mt-4 text-sm text-gray-500">Todavía no hay ventas registradas en estos meses.</p>
       </div>
@@ -120,7 +121,7 @@ export function PnlTable({ months }: { months: PnlMonth[] }) {
   const partial = months.find((m) => m.isPartial)
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+    <div className={`${SURFACE_CARD} p-6`}>
       <h2 className="text-lg font-semibold text-gray-900">Resultado por mes</h2>
       <p className="mt-1 text-sm text-gray-500">
         Cuenta cada venta el mes que se vendió, no el mes que entra la plata.
@@ -149,7 +150,7 @@ export function PnlTable({ months }: { months: PnlMonth[] }) {
           </thead>
 
           <tbody>
-            <tr className="border-t border-gray-200">
+            <tr className="border-t border-t-gray-900/[0.12]">
               <th scope="row" className="py-2 pr-4 text-left text-sm font-medium text-gray-700">
                 Ventas
               </th>
@@ -194,7 +195,7 @@ export function PnlTable({ months }: { months: PnlMonth[] }) {
           </tbody>
 
           <tfoot>
-            <tr className="border-t-2 border-gray-300">
+            <tr className="border-t-2 border-t-gray-900/25">
               <th scope="row" className="pt-3 pr-4 text-left text-sm font-semibold text-gray-900">
                 Utilidad
               </th>

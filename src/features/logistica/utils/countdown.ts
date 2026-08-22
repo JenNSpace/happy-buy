@@ -86,9 +86,9 @@ export const TIER_ICON: Record<UrgencyTier, string> = {
  * `next_round` queda sin caja a propósito: es información, no alarma.
  */
 export const URGENCY_BOX_STYLE: Record<UrgencyTier, string> = {
-  overdue: 'rounded-md border border-red-200 bg-red-50 p-2',
-  urgent: 'rounded-md border border-red-200 bg-red-50 p-2',
-  warning: 'rounded-md border border-amber-200 bg-amber-50 p-2',
+  overdue: 'rounded-lg border border-red-200 bg-red-50 p-2.5',
+  urgent: 'rounded-lg border border-red-200 bg-red-50 p-2.5',
+  warning: 'rounded-lg border border-amber-200 bg-amber-50 p-2.5',
   next_round: '',
   ok: '',
   unknown: '',

@@ -80,7 +80,7 @@ export function ExpenseForm({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="rounded-md bg-happy-green px-3 py-1.5 text-sm font-medium text-white hover:bg-happy-greenDark"
+        className="rounded-xl bg-happy-green px-3 py-2 text-sm font-medium text-white hover:bg-happy-greenDark"
       >
         + Registrar gasto
       </button>
@@ -88,9 +88,9 @@ export function ExpenseForm({
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+    <div className="rounded-xl bg-gray-50 p-4 ring-1 ring-gray-900/[0.06]">
       {saved && (
-        <div className="mb-4 rounded-md border border-happy-green/30 bg-happy-green/5 p-3">
+        <div className="mb-4 rounded-xl border border-happy-green/30 bg-happy-green/5 p-3">
           <p className="text-sm font-medium text-gray-900">
             Gasto registrado: {formatCOP(saved.amount)} en {saved.category.toLowerCase()}
           </p>
@@ -124,7 +124,7 @@ export function ExpenseForm({
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
@@ -142,7 +142,7 @@ export function ExpenseForm({
                   value={customCategory}
                   onChange={(e) => setCustomCategory(e.target.value)}
                   placeholder="Ej: transporte"
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                  className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm"
                 />
               </label>
             )}
@@ -154,7 +154,7 @@ export function ExpenseForm({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="Ej: 38000"
-                className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm"
               />
             </label>
 
@@ -164,7 +164,7 @@ export function ExpenseForm({
                 type="date"
                 value={spentOn}
                 onChange={(e) => setSpentOn(e.target.value)}
-                className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm"
               />
             </label>
 
@@ -173,7 +173,7 @@ export function ExpenseForm({
               <select
                 value={paymentMethodId}
                 onChange={(e) => setPaymentMethodId(e.target.value)}
-                className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm"
               >
                 <option value="">Sin especificar</option>
                 {paymentMethods.map((m) => (
@@ -192,7 +192,7 @@ export function ExpenseForm({
                   setWarehouseId(e.target.value)
                   if (!e.target.value) setIsReimbursement(false)
                 }}
-                className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm"
               >
                 <option value="">No aplica</option>
                 {warehouses.map((w) => (
@@ -211,7 +211,7 @@ export function ExpenseForm({
                 <select
                   value={isReimbursement ? 'bodega' : 'yo'}
                   onChange={(e) => setIsReimbursement(e.target.value === 'bodega')}
-                  className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+                  className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm"
                 >
                   <option value="yo">Lo compré yo y se lo mandé</option>
                   <option value="bodega">Lo compró la bodega y le devolví la plata</option>
@@ -223,7 +223,7 @@ export function ExpenseForm({
           {/* El reembolso es justo el caso donde puede quedar anotado dos veces:
               acá y como ajuste de quincena en Logística. */}
           {isReimbursement && (
-            <p className="rounded-md bg-amber-50 px-3 py-2 text-xs leading-relaxed text-gray-600">
+            <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs leading-relaxed text-gray-600">
               Si este reembolso ya lo sumaste como ajuste en la quincena de Logística, no lo
               registres también acá — quedaría contado dos veces.
             </p>
@@ -236,7 +236,7 @@ export function ExpenseForm({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Ej: cajas y cinta"
-              className="mt-1 w-full rounded-md border border-gray-300 px-2 py-1.5 text-sm"
+              className="mt-1 w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm"
             />
           </label>
 
@@ -246,7 +246,7 @@ export function ExpenseForm({
             <button
               type="submit"
               disabled={saving}
-              className="rounded-md bg-happy-green px-3 py-1.5 text-sm font-medium text-white hover:bg-happy-greenDark disabled:opacity-50"
+              className="rounded-xl bg-happy-green px-3 py-2 text-sm font-medium text-white hover:bg-happy-greenDark disabled:opacity-50"
             >
               {saving ? 'Guardando…' : 'Guardar gasto'}
             </button>

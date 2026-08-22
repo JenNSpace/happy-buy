@@ -47,7 +47,7 @@ export function UnassignedDispatchedAlert({
   }
 
   return (
-    <div className="rounded-xl border-2 border-amber-300 bg-amber-50 p-4">
+    <div className="rounded-2xl bg-amber-50 p-4 ring-1 ring-amber-300">
       <h3 className="text-sm font-bold text-amber-900">
         {rows.length} {rows.length === 1 ? 'envío despachado sin bodega' : 'envíos despachados sin bodega'}
       </h3>
@@ -58,7 +58,7 @@ export function UnassignedDispatchedAlert({
 
       <div className="mt-3 max-h-64 space-y-1.5 overflow-y-auto">
         {rows.map((r) => (
-          <div key={r.shipmentId} className="flex items-center justify-between gap-3 rounded-md bg-white px-3 py-2">
+          <div key={r.shipmentId} className="flex items-center justify-between gap-3 rounded-xl bg-white px-3 py-2">
             <div className="min-w-0">
               <p className="truncate text-xs font-medium text-gray-900">
                 #{r.shipmentId}
@@ -76,7 +76,7 @@ export function UnassignedDispatchedAlert({
               defaultValue=""
               disabled={savingId === r.shipmentId}
               onChange={(e) => handleAssign(r.shipmentId, e.target.value)}
-              className="shrink-0 rounded-md border border-gray-300 px-2 py-1 text-xs disabled:opacity-50"
+              className="shrink-0 rounded-lg border border-gray-300 bg-white px-2 py-1 text-xs disabled:opacity-50"
             >
               <option value="">¿Quién lo despachó?</option>
               {warehouses.map((w) => (

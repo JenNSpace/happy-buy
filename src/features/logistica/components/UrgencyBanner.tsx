@@ -32,7 +32,7 @@ export function UrgencyBanner({ items }: { items: UrgencyItem[] }) {
   if (overdue === 0 && urgent === 0) return null
 
   return (
-    <div className="mb-4 space-y-1 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+    <div className="mb-4 space-y-1 rounded-2xl border border-red-200 bg-red-50 p-3.5 text-sm text-red-700">
       {overdue > 0 && (
         <p>
           🔴 {overdue} paquete{overdue > 1 ? 's' : ''} atrasado{overdue > 1 ? 's' : ''} según Mercado Libre.

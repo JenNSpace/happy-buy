@@ -51,7 +51,7 @@ export function ExpensesList({
 
   return (
     <>
-      <ul className="divide-y divide-gray-100">
+      <ul className="divide-y divide-gray-900/[0.06]">
         {expenses.map((e) => (
           <li key={e.id} className="flex items-baseline justify-between gap-3 py-2">
             <span className="flex items-baseline gap-3">
@@ -110,7 +110,7 @@ export function ExpensesList({
         ))}
       </ul>
 
-      <p className="mt-3 border-t border-gray-100 pt-3 text-sm text-gray-600">
+      <p className="mt-3 border-t border-t-gray-900/[0.07] pt-3 text-sm text-gray-600">
         Total {monthLabel}:{' '}
         <span className="font-semibold tabular-nums text-gray-900">{formatCOP(monthTotal)}</span>
       </p>

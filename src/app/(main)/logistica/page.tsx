@@ -17,6 +17,7 @@ import {
   getUnassignedDispatched,
 } from '@/features/logistica/services/sync-dispatched'
 import { getFullSummary } from '@/features/logistica/services/get-full-summary'
+import { EYEBROW, HAIRLINE_T } from '@/shared/ui/surface'
 
 export const dynamic = 'force-dynamic'
 
@@ -72,8 +73,8 @@ export default async function LogisticaPage() {
         {/* Cuenta corriente: generado − pagado = saldo. Reemplaza al panel de
             quincenas, que obligaba a encajar cada pago en un período fijo
             cuando la cuenta de cobro de la bodega no respeta esos cortes. */}
-        <div className="border-t border-gray-200 pt-6">
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-gray-500">Cuenta con cada bodega</h3>
+        <div className={`pt-6 ${HAIRLINE_T}`}>
+          <h3 className={`mb-3 ${EYEBROW}`}>Cuenta con cada bodega</h3>
           <div className="grid gap-4 md:grid-cols-2">
             {ledgers.map((l) => (
               <WarehouseLedgerCard key={l.warehouseId} ledger={l} />
@@ -120,7 +121,7 @@ export default async function LogisticaPage() {
           mano que hubo que hacer tres veces en agosto. */}
       {ledger && (
         <div className="mt-8">
-          <h3 className="mb-3 text-sm font-bold uppercase tracking-wide text-gray-500">Tu cuenta</h3>
+          <h3 className={`mb-3 ${EYEBROW}`}>Tu cuenta</h3>
           <WarehouseLedgerCard ledger={ledger} readOnly />
         </div>
       )}

@@ -39,7 +39,9 @@ export function FulfillmentBadge({ type }: { type: FulfillmentType }) {
   if (type === 'other') return null
 
   return (
-    <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${BADGE_STYLE[type]}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] ${BADGE_STYLE[type]}`}
+    >
       {LABEL[type]}
     </span>
   )

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { SURFACE_CARD } from '@/shared/ui/surface'
 import { formatCOP } from '@/shared/utils/format'
 import { previewRange, registerPayment, deletePayment, loadStatement } from '../services/ledger-actions'
 import { addAdjustment, removeAdjustment } from '../services/payment-actions'
@@ -104,7 +105,7 @@ function PaymentForm({ ledger, onDone }: { ledger: WarehouseLedger; onDone: () =
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-3 space-y-3 rounded-lg bg-gray-50 p-3">
+    <form onSubmit={handleSubmit} className="mt-3 space-y-3 rounded-xl bg-gray-50 p-3">
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="text-[11px] text-gray-500">La cuenta cubre desde</label>
@@ -115,7 +116,7 @@ function PaymentForm({ ledger, onDone }: { ledger: WarehouseLedger; onDone: () =
               setFrom(e.target.value)
               setGenerated(null)
             }}
-            className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm"
+            className="w-full rounded-xl border border-gray-300 px-2 py-2 text-sm"
           />
         </div>
         <div>
@@ -127,7 +128,7 @@ function PaymentForm({ ledger, onDone }: { ledger: WarehouseLedger; onDone: () =
               setTo(e.target.value)
               setGenerated(null)
             }}
-            className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm"
+            className="w-full rounded-xl border border-gray-300 px-2 py-2 text-sm"
           />
         </div>
       </div>
@@ -143,13 +144,13 @@ function PaymentForm({ ledger, onDone }: { ledger: WarehouseLedger; onDone: () =
         type="button"
         onClick={verificar}
         disabled={checking}
-        className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+        className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50"
       >
         {checking ? 'Revisando...' : 'Ver qué generó en ese rango'}
       </button>
 
       {generated && (
-        <div className="rounded-md border border-gray-200 bg-white p-2 text-sm">
+        <div className="rounded-xl border border-gray-200 bg-white p-2 text-sm">
           <div className="flex justify-between text-gray-600">
             <span>
               {generated.packages} paquete{generated.packages === 1 ? '' : 's'} despachado
@@ -170,7 +171,7 @@ function PaymentForm({ ledger, onDone }: { ledger: WarehouseLedger; onDone: () =
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="0"
-          className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm"
+          className="w-full rounded-xl border border-gray-300 px-2 py-2 text-sm"
         />
       </div>
 
@@ -202,7 +203,7 @@ function PaymentForm({ ledger, onDone }: { ledger: WarehouseLedger; onDone: () =
         value={note}
         onChange={(e) => setNote(e.target.value)}
         placeholder="Nota. Ej: Enrique pagó contra la cuenta de cobro de Gina"
-        className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm"
+        className="w-full rounded-xl border border-gray-300 px-2 py-2 text-sm"
       />
 
       {error && <p className="text-xs text-red-600">{error}</p>}
@@ -211,14 +212,14 @@ function PaymentForm({ ledger, onDone }: { ledger: WarehouseLedger; onDone: () =
         <button
           type="submit"
           disabled={saving || monto <= 0}
-          className="flex-1 rounded-md bg-happy-green px-3 py-2 text-sm font-medium text-white hover:bg-happy-greenDark disabled:opacity-50"
+          className="flex-1 rounded-xl bg-happy-green px-3 py-2 text-sm font-medium text-white hover:bg-happy-greenDark disabled:opacity-50"
         >
           {saving ? 'Guardando...' : 'Registrar pago'}
         </button>
         <button
           type="button"
           onClick={onDone}
-          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-600"
+          className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-600"
         >
           Cancelar
         </button>
@@ -255,7 +256,7 @@ function StatementPanel({ ledger, onClose }: { ledger: WarehouseLedger; onClose:
   }
 
   return (
-    <div className="mt-3 space-y-3 rounded-lg bg-gray-50 p-3">
+    <div className="mt-3 space-y-3 rounded-xl bg-gray-50 p-3">
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="text-[11px] text-gray-500">Desde</label>
@@ -263,7 +264,7 @@ function StatementPanel({ ledger, onClose }: { ledger: WarehouseLedger; onClose:
             type="date"
             value={from}
             onChange={(e) => setFrom(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm"
+            className="w-full rounded-xl border border-gray-300 px-2 py-2 text-sm"
           />
         </div>
         <div>
@@ -272,7 +273,7 @@ function StatementPanel({ ledger, onClose }: { ledger: WarehouseLedger; onClose:
             type="date"
             value={to}
             onChange={(e) => setTo(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm"
+            className="w-full rounded-xl border border-gray-300 px-2 py-2 text-sm"
           />
         </div>
       </div>
@@ -282,14 +283,14 @@ function StatementPanel({ ledger, onClose }: { ledger: WarehouseLedger; onClose:
           type="button"
           onClick={generar}
           disabled={loading}
-          className="flex-1 rounded-md bg-happy-green px-3 py-2 text-sm font-medium text-white hover:bg-happy-greenDark disabled:opacity-50"
+          className="flex-1 rounded-xl bg-happy-green px-3 py-2 text-sm font-medium text-white hover:bg-happy-greenDark disabled:opacity-50"
         >
           {loading ? 'Armando la cuenta...' : 'Generar cuenta de cobro'}
         </button>
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-600"
+          className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-600"
         >
           Cerrar
         </button>
@@ -298,7 +299,7 @@ function StatementPanel({ ledger, onClose }: { ledger: WarehouseLedger; onClose:
       {error && <p className="text-xs text-red-600">{error}</p>}
 
       {statement && (
-        <div className="overflow-x-auto rounded-md border border-gray-200 bg-white p-3">
+        <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white p-3">
           <p className="mb-2 text-sm font-semibold text-gray-900">
             {statement.warehouseName} · {fecha(`${statement.from}T12:00:00-05:00`)} al{' '}
             {fecha(`${statement.to}T12:00:00-05:00`)}
@@ -309,7 +310,7 @@ function StatementPanel({ ledger, onClose }: { ledger: WarehouseLedger; onClose:
               sabe de quién fueron. Ese período se salda con la cuenta de cobro
               de la propia bodega. */}
           {statement.sinRegistro > 0 && (
-            <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 p-2 text-[11px] leading-snug text-amber-900">
+            <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-2 text-[11px] leading-snug text-amber-900">
               <span className="font-semibold">
                 Hay {statement.sinRegistro} envío{statement.sinRegistro === 1 ? '' : 's'} en este rango que no
                 está{statement.sinRegistro === 1 ? '' : 'n'} en la cuenta.
@@ -374,7 +375,7 @@ function StatementPanel({ ledger, onClose }: { ledger: WarehouseLedger; onClose:
               <div className="mt-3 space-y-2">
                 <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">Otros conceptos</p>
                 {statement.adjustments.map((a, i) => (
-                  <div key={i} className="rounded-md bg-gray-50 p-2">
+                  <div key={i} className="rounded-xl bg-gray-50 p-2">
                     <div className="flex items-baseline justify-between gap-3">
                       <span className="font-medium text-gray-700">Ajuste</span>
                       <span className="whitespace-nowrap font-medium text-gray-900">{formatCOP(a.amount)}</span>
@@ -436,7 +437,7 @@ function AdjustmentForm({ warehouseId, onDone }: { warehouseId: string; onDone: 
   }
 
   return (
-    <form onSubmit={handleSubmit} className="mt-3 space-y-3 rounded-lg bg-gray-50 p-3">
+    <form onSubmit={handleSubmit} className="mt-3 space-y-3 rounded-xl bg-gray-50 p-3">
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="text-[11px] text-gray-500">Fecha</label>
@@ -444,7 +445,7 @@ function AdjustmentForm({ warehouseId, onDone }: { warehouseId: string; onDone: 
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm"
+            className="w-full rounded-xl border border-gray-300 px-2 py-2 text-sm"
           />
         </div>
         <div>
@@ -456,7 +457,7 @@ function AdjustmentForm({ warehouseId, onDone }: { warehouseId: string; onDone: 
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0"
-            className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm"
+            className="w-full rounded-xl border border-gray-300 px-2 py-2 text-sm"
           />
         </div>
       </div>
@@ -465,21 +466,21 @@ function AdjustmentForm({ warehouseId, onDone }: { warehouseId: string; onDone: 
         value={note}
         onChange={(e) => setNote(e.target.value)}
         placeholder="¿De qué es? Ej: impresión de etiquetas, stickers, descuento..."
-        className="w-full rounded-md border border-gray-300 px-2 py-2 text-sm"
+        className="w-full rounded-xl border border-gray-300 px-2 py-2 text-sm"
       />
       {error && <p className="text-xs text-red-600">{error}</p>}
       <div className="flex gap-2">
         <button
           type="submit"
           disabled={saving || !amount || !note.trim()}
-          className="flex-1 rounded-md bg-happy-green px-3 py-2 text-sm font-medium text-white hover:bg-happy-greenDark disabled:opacity-50"
+          className="flex-1 rounded-xl bg-happy-green px-3 py-2 text-sm font-medium text-white hover:bg-happy-greenDark disabled:opacity-50"
         >
           {saving ? 'Guardando...' : 'Agregar'}
         </button>
         <button
           type="button"
           onClick={onDone}
-          className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-600"
+          className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-600"
         >
           Cancelar
         </button>
@@ -518,7 +519,7 @@ export function WarehouseLedgerCard({
   const debe = ledger.balance > 0
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white p-4">
+    <div className={`${SURFACE_CARD} p-4`}>
       <div className="mb-3 flex items-start justify-between gap-2">
         <h4 className="text-sm font-bold uppercase tracking-wide text-gray-700">{ledger.warehouseName}</h4>
         {/* Solo se separan las dos tarifas cuando de verdad son distintas.
@@ -538,7 +539,7 @@ export function WarehouseLedgerCard({
           despachados" del período completo —ya cobrado en parte— y ese número
           no correspondía al saldo. */}
       {ledger.payments.length > 0 && (
-        <div className="mb-3 rounded-md bg-gray-50 p-2 text-sm">
+        <div className="mb-3 rounded-xl bg-gray-50 p-2 text-sm">
           <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-gray-400">Ya pagado</p>
           {/* Cada pago en su renglón, con lo que cubre. Sumarlos en un solo
               número escondía que $125.000 eran paquetes y $10.000 etiquetas. */}
@@ -634,7 +635,7 @@ export function WarehouseLedgerCard({
             setShowStatement(false)
             setShowAdjustment(false)
           }}
-          className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          className="flex-1 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
         >
           Registrar pago
         </button>
@@ -644,7 +645,7 @@ export function WarehouseLedgerCard({
             setShowPayment(false)
             setShowAdjustment(false)
           }}
-          className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          className="flex-1 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
         >
           Cuenta de cobro
         </button>
