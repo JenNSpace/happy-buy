@@ -108,6 +108,44 @@ export interface PaymentMethod {
   created_at: string
 }
 
+/** payout = retiro al banco · purchase = compra pagada desde MP · advance_fee = costo de adelantar la plata. */
+export type MpMovementKind = 'payout' | 'purchase' | 'advance_fee'
+
+/**
+ * Una salida de plata de Mercado Pago, del Reporte de Liberaciones.
+ *
+ * `id` es el SOURCE_ID del reporte. El sync hace upsert contra él, así que
+ * reprocesar el mismo archivo no duplica nada.
+ */
+export interface MpMovement {
+  id: string
+  moved_on: string
+  kind: MpMovementKind
+  amount: number
+  payment_method: string | null
+  raw_description: string
+  synced_at: string
+}
+
+export type MpCategory = 'producto' | 'bodegas' | 'insumos' | 'publicidad' | 'personal' | 'otro'
+
+/** Un pedazo de un retiro, ya explicado: "$10.000 en etiquetas". */
+export interface MpAllocation {
+  id: string
+  movement_id: string
+  amount: number
+  category: MpCategory
+  note: string | null
+  /** Compra ya registrada en /compras. Si está puesta, este costo YA existe en el sistema. */
+  purchase_id: string | null
+  /** Pago a bodega ya registrado en /logistica. Igual: el costo ya se contó al despachar. */
+  warehouse_payment_id: string | null
+  /** Gasto que ESTE reparto creó. Se borra junto con él. */
+  expense_id: string | null
+  created_by: string | null
+  created_at: string
+}
+
 export interface Expense {
   id: string
   category: string
@@ -239,6 +277,16 @@ export interface Database {
         Row: MlPayment
         Insert: Omit<MlPayment, 'synced_at'> & { synced_at?: string }
         Update: Partial<Omit<MlPayment, 'id'>>
+      }
+      mp_movements: {
+        Row: MpMovement
+        Insert: Omit<MpMovement, 'synced_at'> & { synced_at?: string }
+        Update: Partial<Omit<MpMovement, 'id'>>
+      }
+      mp_allocations: {
+        Row: MpAllocation
+        Insert: Omit<MpAllocation, 'id' | 'created_at'> & { id?: string; created_at?: string }
+        Update: Partial<Omit<MpAllocation, 'id'>>
       }
       expenses: {
         Row: Expense

@@ -14,6 +14,11 @@ import { getCashFlow } from '@/features/finanzas/services/get-cash-flow'
 import { CashSummaryCard } from '@/features/finanzas/components/CashSummaryCard'
 import { CashFlowSection } from '@/features/finanzas/components/CashFlowSection'
 import { CostModelChangeBanner } from '@/features/finanzas/components/CostModelChangeBanner'
+import { getMpMovements } from '@/features/finanzas/services/get-mp-movements'
+import { getUnpaidPurchases } from '@/features/finanzas/services/get-unpaid-purchases'
+import { getWarehousePayments } from '@/features/finanzas/services/get-warehouse-payments'
+import { MovementsSection } from '@/features/finanzas/components/MovementsSection'
+import { SURFACE_CARD } from '@/shared/ui/surface'
 
 export const dynamic = 'force-dynamic'
 
@@ -47,11 +52,14 @@ export default async function FinanzasPage() {
     console.warn('[finanzas] No se pudieron sincronizar los pagos de Mercado Pago:', e)
   }
 
-  const [summary, flow, debts, { data: paymentMethods }, { data: expenses }, { data: warehouseRows }] =
+  const [summary, flow, debts, movements, unpaidPurchases, warehousePayments, { data: paymentMethods }, { data: expenses }, { data: warehouseRows }] =
     await Promise.all([
       getCashSummary(),
       getCashFlow(),
       getDebts(),
+      getMpMovements(),
+      getUnpaidPurchases(),
+      getWarehousePayments(),
       supabase.from('payment_methods').select('*').order('name').returns<PaymentMethod[]>(),
       supabase.from('expenses').select('*').order('spent_on', { ascending: false }).limit(40).returns<Expense[]>(),
       supabase.from('warehouses').select('*').order('name').returns<Warehouse[]>(),
@@ -78,6 +86,12 @@ export default async function FinanzasPage() {
 
       <CashFlowSection flow={flow} />
 
+      <MovementsSection
+        view={movements}
+        purchases={unpaidPurchases}
+        warehousePayments={warehousePayments}
+      />
+
       {/* El P&L pide meses de órdenes y el libro de cargos de ML — lo más lento
           de la página. En Suspense para que lo de arriba se vea de inmediato. */}
       <Suspense fallback={<CardSkeleton label="resultado por mes" />}>
@@ -93,7 +107,7 @@ export default async function FinanzasPage() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <section className={`${SURFACE_CARD} p-6`}>
         <div className="flex items-baseline justify-between gap-3">
           <h3 className="text-lg font-semibold text-gray-900">Gastos</h3>
           <ExpenseForm paymentMethods={methods} warehouses={warehouses} />

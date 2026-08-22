@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/snapshot-ads-daily",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/sync-mp-movements",
+      "schedule": "30 9 * * *"
     }
   ]
 }

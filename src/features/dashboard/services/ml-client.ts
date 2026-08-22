@@ -113,6 +113,46 @@ export async function mpGet<T>(path: string): Promise<T> {
   return res.json() as Promise<T>
 }
 
+/**
+ * POST contra Mercado Pago. Lo usa el Reporte de Liberaciones, que es el unico
+ * sitio donde se ven los retiros al banco (`/v1/payments/search` solo muestra
+ * las compras hechas dentro de Mercado Libre).
+ */
+export async function mpPost<T>(path: string, payload: unknown): Promise<T> {
+  const token = await getAccessToken()
+
+  const res = await fetch(`https://api.mercadopago.com${path}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`Mercado Pago API POST ${path} -> ${res.status}: ${body}`)
+  }
+
+  return res.json() as Promise<T>
+}
+
+/** Igual que mpGet pero devuelve el cuerpo crudo — los reportes bajan en CSV. */
+export async function mpGetText(path: string): Promise<string> {
+  const token = await getAccessToken()
+
+  const res = await fetch(`https://api.mercadopago.com${path}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  })
+
+  if (!res.ok) {
+    const body = await res.text()
+    throw new Error(`Mercado Pago API ${path} -> ${res.status}: ${body}`)
+  }
+
+  return res.text()
+}
+
 export async function mlGetBinary(path: string): Promise<ArrayBuffer> {
   const token = await getAccessToken()
 
