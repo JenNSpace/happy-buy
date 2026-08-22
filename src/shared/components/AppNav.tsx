@@ -26,27 +26,30 @@ export function AppNav({ role }: { role: UserRole }) {
   const visibleTabs = TABS.filter((tab) => tab.roles.includes(role))
 
   return (
-    <header className="border-b border-gray-200 bg-white">
-      <div className="mx-auto flex max-w-5xl items-center justify-between px-8 pt-6">
+    <header className="border-b border-b-gray-900/[0.07] bg-white">
+      <div className="mx-auto flex max-w-5xl items-center justify-between px-4 pt-5 sm:px-8 sm:pt-6">
         <div className="flex items-center gap-3">
           <Image src="/logo.png" alt="Happy Buy" width={36} height={36} priority />
           <h1 className="text-xl font-bold text-gray-900">Happy Buy</h1>
         </div>
         <form action={signout}>
-          <button type="submit" className="text-sm text-gray-500 hover:text-happy-greenDark">
+          <button
+            type="submit"
+            className="-mr-2 min-h-[44px] px-2 text-sm text-gray-500 hover:text-happy-greenDark"
+          >
             Cerrar sesión
           </button>
         </form>
       </div>
 
-      <nav className="mx-auto flex max-w-5xl gap-1 px-8 mt-4">
+      <nav className="mx-auto mt-3 flex max-w-5xl gap-1 px-4 sm:mt-4 sm:px-8">
         {visibleTabs.map((tab) => {
           if (!tab.enabled) {
             return (
               <span
                 key={tab.href}
                 title="Próximamente"
-                className="cursor-not-allowed rounded-t-lg px-4 py-2 text-sm font-medium text-gray-300"
+                className="inline-flex min-h-[44px] cursor-not-allowed items-center rounded-t-lg px-4 text-sm font-medium text-gray-300"
               >
                 {tab.label}
               </span>
@@ -59,7 +62,7 @@ export function AppNav({ role }: { role: UserRole }) {
             <Link
               key={tab.href}
               href={tab.href}
-              className={`rounded-t-lg px-4 py-2 text-sm font-medium transition-colors ${
+              className={`inline-flex min-h-[44px] items-center rounded-t-lg px-4 text-sm font-medium transition-colors ${
                 isActive
                   ? 'border-b-2 border-happy-green text-happy-greenDark'
                   : 'text-gray-500 hover:text-gray-900'

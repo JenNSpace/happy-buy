@@ -56,7 +56,7 @@ export default async function LogisticaPage() {
     ])
 
     return (
-      <div className="mx-auto max-w-7xl space-y-6 p-8">
+      <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-8">
         <AutoRefresh />
         <h2 className="text-2xl font-bold text-gray-900">Logística</h2>
         <UnassignedDispatchedAlert rows={unassigned} warehouses={warehouses ?? []} />
@@ -95,7 +95,7 @@ export default async function LogisticaPage() {
   const name = profile?.full_name ?? 'de nuevo'
 
   return (
-    <div className="mx-auto max-w-2xl p-8">
+    <div className="mx-auto max-w-2xl p-4 sm:p-8">
       <AutoRefresh />
       <h2 className="mb-1 text-2xl font-bold text-gray-900">
         ¡{greeting()}, {name}! 👋

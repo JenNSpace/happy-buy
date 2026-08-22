@@ -545,7 +545,7 @@ export function WarehouseLedgerCard({
               número escondía que $125.000 eran paquetes y $10.000 etiquetas. */}
           {ledger.payments.map((p) => (
             <div key={p.id} className="flex items-baseline justify-between gap-2 py-0.5">
-              <span className="min-w-0 truncate text-gray-600" title={p.note ?? ''}>
+              <span className="min-w-0 break-words text-gray-600" title={p.note ?? ''}>
                 <span className="font-medium text-gray-900">{formatCOP(p.amount)}</span>
                 {' · '}
                 {p.packages !== null
@@ -564,7 +564,7 @@ export function WarehouseLedgerCard({
             </div>
           ))}
           {ledger.shortfall !== 0 && (
-            <p className="mt-1 text-[11px] leading-snug text-amber-700">
+            <p className="mt-1 text-xs leading-snug text-amber-700">
               {ledger.shortfall > 0 ? (
                 <>
                   Quedó debiendo <span className="font-semibold">{formatCOP(ledger.shortfall)}</span> de ese
@@ -598,7 +598,7 @@ export function WarehouseLedgerCard({
             aparece: se paga y desaparece. */}
         {ledger.pendingAdjustmentItems.map((a) => (
           <div key={a.id} className="flex items-baseline justify-between gap-3 text-gray-600">
-            <span className="min-w-0 truncate" title={a.note}>
+            <span className="min-w-0 break-words" title={a.note}>
               {resumen(a.note)}
             </span>
             <span className="whitespace-nowrap">{formatCOP(a.amount)}</span>
@@ -608,7 +608,7 @@ export function WarehouseLedgerCard({
 
       {/* El saldo es la respuesta a "¿cuánto le debo?", y es una sola sin
           importar por qué rango se haya cobrado. */}
-      <div className="mt-2 flex items-baseline justify-between border-t-2 border-gray-200 pt-2">
+      <div className="mt-2 flex items-baseline justify-between border-t-2 border-t-gray-900/25 pt-2">
         <span className="text-sm font-semibold text-gray-700">
           {debe ? (readOnly ? 'Te deben' : 'Le debemos') : 'Saldo'}
         </span>
@@ -671,11 +671,11 @@ export function WarehouseLedgerCard({
       )}
 
       {ledger.adjustments.length > 0 && (
-        <div className="mt-3 border-t border-gray-100 pt-2">
+        <div className="mt-3 border-t border-t-gray-900/[0.07] pt-2">
           <p className="mb-1 text-[11px] font-medium text-gray-400">Otros conceptos</p>
           {ledger.adjustments.map((a) => (
             <div key={a.id} className="flex items-baseline justify-between gap-2 py-0.5 text-xs">
-              <span className="min-w-0 truncate text-gray-600" title={a.note}>
+              <span className="min-w-0 break-words text-gray-600" title={a.note}>
                 <span className="font-medium text-gray-700">{formatCOP(a.amount)}</span>
                 {' · '}
                 {resumen(a.note)}

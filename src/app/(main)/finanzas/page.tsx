@@ -38,7 +38,7 @@ export default async function FinanzasPage() {
   // costos ni compras.
   if (profile?.role !== 'admin') {
     return (
-      <div className="mx-auto max-w-5xl p-8">
+      <div className="mx-auto max-w-5xl p-4 sm:p-8">
         <p className="text-gray-500">Esta sección estará disponible pronto.</p>
       </div>
     )
@@ -77,7 +77,7 @@ export default async function FinanzasPage() {
   const monthLabel = now.toLocaleDateString('es-CO', { month: 'long', timeZone: 'America/Bogota' })
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 p-8">
+    <div className="mx-auto max-w-5xl space-y-6 p-4 sm:p-8">
       <h2 className="text-2xl font-bold text-gray-900">Finanzas</h2>
 
       <CostModelChangeBanner />

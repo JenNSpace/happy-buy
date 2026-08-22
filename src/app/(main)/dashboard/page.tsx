@@ -33,7 +33,7 @@ export default async function DashboardPage() {
 
   if (profile?.role !== 'admin') {
     return (
-      <div className="mx-auto max-w-5xl p-8">
+      <div className="mx-auto max-w-5xl p-4 sm:p-8">
         <p className="text-gray-500">Tu panel estará disponible pronto.</p>
       </div>
     )
@@ -57,7 +57,7 @@ export default async function DashboardPage() {
   const netProfitAfterAds = summary.netProfit - (ads?.cost ?? 0)
 
   return (
-    <div className="mx-auto max-w-5xl p-8">
+    <div className="mx-auto max-w-5xl p-4 sm:p-8">
       <div className="mb-6">
         <CostModelChangeBanner />
       </div>

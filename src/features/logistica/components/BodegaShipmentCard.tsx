@@ -108,19 +108,19 @@ export function BodegaShipmentCard({
         </div>
       </div>
 
-      <div className="mt-3 flex gap-2">
+      <div className="mt-3 flex flex-wrap gap-2">
         <a
           href={`/api/shipping/label/${shipment.shipmentId}`}
           target="_blank"
           rel="noopener noreferrer"
-          className={BUTTON_GHOST}
+          className={`${BUTTON_GHOST} min-h-[44px] flex-1 text-center`}
         >
           {shipment.printed ? 'Reimprimir guía' : 'Imprimir guía'}
         </a>
         <button
           onClick={handleDeliver}
           disabled={delivering}
-          className={BUTTON_PRIMARY}
+          className={`${BUTTON_PRIMARY} min-h-[44px] flex-1`}
         >
           {delivering ? 'Guardando...' : 'Marcar entregado'}
         </button>
